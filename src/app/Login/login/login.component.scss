@@ -1,0 +1,78 @@
+body {
+    margin: 0;
+    padding: 0;
+}
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+   // background-image: url("");
+    background-image: url('https://img.freepik.com/free-vector/warehouse-interior-logistics-cargo-delivery_107791-1777.jpg?t=st=1732439850~exp=1732443450~hmac=8630773ce727d6044797105cae6229d5275b95fd711b1d1cfd75aa4a95a0569e&w=1060');  
+   // Replace with your image path
+    background-size: cover;
+    background-position: center;
+  
+    form {
+      width:350px;
+      padding: 40px;
+      border-radius: 10px;
+      background-color: rgba(255, 255, 255, 0.8); // Semi-transparent background
+      box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+  
+      h2 {
+        text-align: center;
+        margin-bottom: 30px;
+        font-size: 24px;
+        font-weight: bold;
+        color: #333;
+      }
+  
+      .form-group {
+        margin-bottom: 20px;
+  
+        label {
+          display: block;
+          margin-bottom: 5px;
+          font-weight: bold;
+          font-size: 14px;
+          color: #333;
+        }
+  
+        input {
+          width: 94%;
+          padding: 10px;
+          border: 1px solid #ccc;
+          border-radius: 5px;
+          font-size: 16px;
+        }
+  
+        .error-text {
+          color: red;
+          font-size: 12px;
+          margin-top: 5px;
+        }
+      }
+  
+      button {
+        width: 100%;
+        padding: 12px;
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: bold; 
+      }
+      .button-container {
+        display: flex;
+        justify-content: space-between; /* Adjust spacing as needed */
+        padding: 0%;
+    }
+      .mr {
+       margin-right: 50px;
+
+    }
+    }
+  }

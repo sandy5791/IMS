@@ -1,0 +1,58 @@
+<head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<div class="dashboard-container" [ngClass]="{ 'collapsed-sidebar': isSidebarCollapsed }">
+    <!-- Header Section -->
+    <header class="dashboard-header">
+        <button class="hamburger-btn" (click)="toggleSidebar()">
+            <i class="fas fa-bars"></i>
+        </button>
+        <div class="logo">Inventory Management System</div>
+        <div class="user-controls">
+            <div class="user-dropdown" (click)="toggleDropdown()">
+                <i class="fas fa-user-circle user-icon"></i>
+                <span class="username">{{LogedInUser}}</span> <!-- Example Username -->
+                <div class="dropdown-menu" [ngClass]="{ 'show': isDropdownOpen }">
+                    <a (click)="logout()" class="dropdown-item">Logout</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+   
+
+
+    <!-- Sidebar Navigation -->
+    <aside class="dashboard-sidebar" [ngClass]="{ 'collapsed': isSidebarCollapsed }">
+        <nav>
+            <ul>
+                <li (click)="setActive('sales'); collapseSidebar()">
+                    <a routerLink="/dashboard/sales" [ngClass]="{ active: activeLink === 'sales' }">
+                        <i class="fas fa-chart-line"></i> Sales
+                    </a>
+                </li>
+                <li (click)="setActive('purchases'); collapseSidebar()">
+                    <a routerLink="/dashboard/purchases" [ngClass]="{ active: activeLink === 'purchases' }">
+                        <i class="fas fa-box"></i> Purchases
+                    </a>
+                </li>
+                <li (click)="setActive('reports'); collapseSidebar()">
+                    <a routerLink="/dashboard/reports" [ngClass]="{ active: activeLink === 'reports' }">
+                        <i class="fas fa-file-alt"></i> Reports
+                    </a>
+                </li>
+                <li (click)="setActive('inventory'); collapseSidebar()">
+                    <a routerLink="/dashboard/inventory" [ngClass]="{ active: activeLink === 'inventory' }">
+                        <i class="fas fa-cogs"></i> Inventory
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="dashboard-content">
+        <router-outlet></router-outlet>
+    </main>
+</div>
+
