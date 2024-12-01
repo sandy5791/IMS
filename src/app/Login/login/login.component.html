@@ -1,30 +1,42 @@
 <div class="login-container">
-    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" (reset)="RestForm()">
-        <h2>Login</h2>
-
-        <div class="form-group">
-            <label for="User">Username</label>
-            <input type="text" id="User" formControlName="User" placeholder="Enter your User" class="form-control" />
-            <div *ngIf="submit && User?.invalid" class="error-text">
-                <small *ngIf=" submit|| User?.errors?.['required']">user is required.</small>
+    <div class="form-wrapper">
+        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" (reset)="RestForm()">
+            <div class="form-header">
+                <h2>Login to Your Account</h2>
+                <p>Access your dashboard and manage your tasks.</p>
             </div>
-        </div>
 
-        <div class="form-group">
-            <label for="password">Password</label>
-            <input type="password" id="password" formControlName="password" placeholder="Enter your password"
-                class="form-control" />
-            <div *ngIf=" submit && password?.invalid" class="error-text">
-                <small *ngIf="submit && password?.errors?.['required']">Password is required.</small>
-                <small *ngIf="password?.errors?.['minlength']">
-                    Password must be at least 6 characters.
-                </small>
+            <div class="form-group">
+                <div class="input-wrapper">
+                    <i class="icon fas fa-user"></i>
+                    <input type="text" id="User" formControlName="User" placeholder="Username" />
+                </div>
+                <div *ngIf="submit && User?.invalid" class="error-text">
+                    <small *ngIf="submit || User?.errors?.['required']">Username is required.</small>
+                </div>
             </div>
-        </div>
-        <div class="button-container">
-            <button class="mr" type="submit">Login</button>
-            <button type="reset">Reset</button>
-        </div>
 
-    </form>
+            <div class="form-group">
+                <div class="input-wrapper">
+                    <i class="icon fas fa-lock"></i>
+                    <input type="password" id="password" formControlName="password" placeholder="Password" />
+                </div>
+                <div *ngIf="submit && password?.invalid" class="error-text">
+                    <small *ngIf="submit && password?.errors?.['required']">Password is required.</small>
+                    <small *ngIf="password?.errors?.['minlength']">
+                        Password must be at least 6 characters.
+                    </small>
+                </div>
+            </div>
+
+            <div class="button-container">
+                <button class="btn-submit" type="submit">Login</button>
+                <button class="btn-reset" type="reset">Reset</button>
+            </div>
+
+            <div class="form-footer">
+                <p>Don’t have an account? <a href="#">Sign up</a></p>
+            </div>
+        </form>
+    </div>
 </div>

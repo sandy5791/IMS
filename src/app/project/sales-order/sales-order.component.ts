@@ -9,11 +9,11 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 export class SalesOrderComponent implements OnInit , OnDestroy {
 constructor()
 {
-
+  console.log('Sales order activated')
 }
   ngOnInit(): void {
   }
-  
+
   ngOnDestroy(): void {
     
   }

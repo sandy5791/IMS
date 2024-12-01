@@ -1,58 +1,96 @@
 <head>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
+
 <div class="dashboard-container" [ngClass]="{ 'collapsed-sidebar': isSidebarCollapsed }">
     <!-- Header Section -->
     <header class="dashboard-header">
         <button class="hamburger-btn" (click)="toggleSidebar()">
             <i class="fas fa-bars"></i>
         </button>
-        <div class="logo">Inventory Management System</div>
+
+        <div class="logo">
+            <img src="../img/inventory-management_16963052.png" alt="Inventory Management Logo" class="logo-image" />
+        </div>
+
         <div class="user-controls">
-            <div class="user-dropdown" (click)="toggleDropdown()">
-                <i class="fas fa-user-circle user-icon"></i>
-                <span class="username">{{LogedInUser}}</span> <!-- Example Username -->
+            <div id="users" class="user-dropdown" (click)="toggleDropdown()">
+                <i id="users" class="fas fa-user-circle user-icon"></i>
+                <span id="users" class="username">{{ LogedInUser }}</span>
                 <div class="dropdown-menu" [ngClass]="{ 'show': isDropdownOpen }">
-                    <a (click)="logout()" class="dropdown-item">Logout</a>
+                    <a (click)="logout()" class="dropdown-item">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                    <a href="/profile" class="dropdown-item">
+                        <i class="fas fa-user"></i> Profile
+                    </a>
+                    <a href="/settings" class="dropdown-item">
+                        <i class="fas fa-cogs"></i> Settings
+                    </a>
                 </div>
             </div>
         </div>
+
     </header>
 
-   
-
-
-    <!-- Sidebar Navigation -->
+    <!-- Sidebar Section -->
     <aside class="dashboard-sidebar" [ngClass]="{ 'collapsed': isSidebarCollapsed }">
         <nav>
-            <ul>
+           
+            <ul class="sidebar-menu">
+                
+                <li (click)="setActive('Home'); collapseSidebar()">
+                    <a routerLink="/dashboard" [ngClass]="{ active: activeLink === 'Home' }">
+                        <i class="fas fa-home"></i> <span>Home</span>
+                    </a>
+                </li>
+                
                 <li (click)="setActive('sales'); collapseSidebar()">
                     <a routerLink="/dashboard/sales" [ngClass]="{ active: activeLink === 'sales' }">
-                        <i class="fas fa-chart-line"></i> Sales
+                        <i class="fas fa-chart-line"></i> <span>Sales</span>
                     </a>
                 </li>
                 <li (click)="setActive('purchases'); collapseSidebar()">
                     <a routerLink="/dashboard/purchases" [ngClass]="{ active: activeLink === 'purchases' }">
-                        <i class="fas fa-box"></i> Purchases
+                        <i class="fas fa-box"></i> <span>Purchases</span>
                     </a>
                 </li>
                 <li (click)="setActive('reports'); collapseSidebar()">
                     <a routerLink="/dashboard/reports" [ngClass]="{ active: activeLink === 'reports' }">
-                        <i class="fas fa-file-alt"></i> Reports
+                        <i class="fas fa-file-alt"></i> <span>Reports</span>
                     </a>
                 </li>
                 <li (click)="setActive('inventory'); collapseSidebar()">
                     <a routerLink="/dashboard/inventory" [ngClass]="{ active: activeLink === 'inventory' }">
-                        <i class="fas fa-cogs"></i> Inventory
+                        <i class="fas fa-cogs"></i> <span>Inventory</span>
                     </a>
                 </li>
             </ul>
         </nav>
     </aside>
 
-    <!-- Main Content Area -->
+    <!-- Main Content Section -->
     <main class="dashboard-content">
+        <div *ngIf="showSearch" class="search-container">
+            <div class="search-bar">
+                <i class="fas fa-search search-icon"></i>
+                <input id="search-box" type="text" [(ngModel)]="searchQuery" placeholder="Search for modules..."
+                    (input)="filterSuggestions()" />
+            </div>
+            <ul id="suggestions-list" class="suggestions-list" *ngIf="showSuggestions" [ngClass]="{ 'show': showSuggestions }">
+                <li *ngFor="let suggestion of filteredSuggestions" (click)="navigateTo(suggestion)">
+                    {{ suggestion.name }}
+                </li>
+            </ul>
+        </div>
+
+        <div *ngIf="showSearch" class="cards-container">
+            <div *ngFor="let menu of menuItems" class="card" (click)="navigateTo(menu)">
+                <i class="{{ menu.icon }}"></i>
+                <h3>{{ menu.name }}</h3>
+            </div>
+        </div>
         <router-outlet></router-outlet>
     </main>
 </div>
-
