@@ -69,6 +69,10 @@ showSuggestions: any;
       {
         this .showSuggestions = true;
       }
+      else 
+      {
+        this .showSuggestions = false;
+      }
     }
   }
 

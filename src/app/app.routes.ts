@@ -7,6 +7,7 @@ import { SalesOrderComponent } from './project/sales-order/sales-order.component
 import { PurchaseOrderComponent } from './project/purchase-order/purchase-order.component';
 import { InventoryComponent } from './project/inventory/inventory.component';
 import { ReportComponent } from './project/report/report.component';
+import { AdminLoginComponent } from './Login/admin-login/admin-login.component';
 export const routes: Routes = [
     {
       path: 'dashboard',
@@ -23,6 +24,10 @@ export const routes: Routes = [
     {
       path: 'login',
       loadComponent: () => import('./Login/login/login.component').then(m => m.LoginComponent)
+    },
+    {
+      path: 'admin',
+      loadComponent: () => import('./Login/admin-login/admin-login.component').then(m => m.AdminLoginComponent)
     },
     { path: '', redirectTo: 'login', pathMatch: 'full' },
     { path: '**', redirectTo: 'login' }
