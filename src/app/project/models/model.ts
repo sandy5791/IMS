@@ -1,4 +1,6 @@
+
 export class SaleDetails{
+  
     itemId: string ='';
     itemName: string ='';
     quantity: number =1 ;

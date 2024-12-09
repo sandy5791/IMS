@@ -4,7 +4,6 @@ import { NavigationEnd, Router, RouterModule, RouterOutlet } from '@angular/rout
 import { AuthService } from '../services/authService/auth-service.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-
 @Component({
   selector: 'app-dashboard',
   standalone: true,
@@ -13,6 +12,8 @@ import { FormsModule } from '@angular/forms';
   styleUrls: ['./dashboard.component.scss']
 })
 export class DashboardComponent {
+
+  
   isSidebarCollapsed: boolean = false;
   isDropdownOpen: Boolean = false;
   searchQuery = '';

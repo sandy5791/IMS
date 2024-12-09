@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, ViewEncapsulation } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpserviceService } from '../../services/httpservice.service';
 import { ToastrService } from 'ngx-toastr';
@@ -12,7 +12,7 @@ import { catchError } from 'rxjs';
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss'],
   imports: [ReactiveFormsModule, CommonModule,RouterModule],
-
+  encapsulation: ViewEncapsulation.ShadowDom
 })
 export class LoginComponent {
   loginForm: FormGroup;
