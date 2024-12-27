@@ -27,13 +27,13 @@ body {
         "sidebar header"
         "sidebar content";
     grid-template-columns: 280px 1fr;
-    grid-template-rows: 57px 1fr;
+    grid-template-rows: 46px 1fr;
     height: 100vh;
     transition: 0.5s ease;
 }
 
 .dashboard-container.collapsed-sidebar {
-    grid-template-columns: 80px 1fr;
+    grid-template-columns: 70px 1fr;
 }
 
 /* Sidebar */
@@ -53,7 +53,7 @@ body {
 }
 
 .dashboard-sidebar.collapsed {
-    width: 80px;
+    width: 70px;
 }
 
 .dashboard-sidebar img {
@@ -114,7 +114,7 @@ body {
 
 /* Header */
 .dashboard-header {
-    height: 61px;
+    height: 45px;
     grid-area: header;
     background: linear-gradient(to right, #0078ff, #00bfff); 
     color: white;
@@ -165,7 +165,7 @@ body {
 /* Content */
 .dashboard-content {
     grid-area: content;
-    padding: 5px 0px;
+    padding: 0px 0px;
    // overflow-y: auto;
     background: #f4f5f9;
  //   border-top-left-radius: 30px;

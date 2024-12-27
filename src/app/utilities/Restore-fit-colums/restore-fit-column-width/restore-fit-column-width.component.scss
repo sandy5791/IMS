@@ -1,0 +1,70 @@
+.custom-header {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background-color: #007bff; /* Matches your header color */
+    padding: 10px;
+    color: #ffffff;
+    font-weight: bold;
+    border-radius: 4px;
+    height: 30px;
+  }
+  
+  .custom-header .menu {
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: bold;
+    padding: 5px;
+    border-radius: 50%;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+  }
+  
+  .custom-header .menu:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+  }
+  
+  .menu-options {
+    position: absolute;
+    top: 100%; /* Aligns below the menu icon */
+    right: 0; /* Aligns the dropdown to the left side of the menu */
+   // transform: translateX(-100%); /* Adjusts the menu fully to the left */
+    background-color: #ffffff;
+    border: 1px solid #ddd;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    z-index: 1000;
+    width: auto; /* Adjusts the width based on content */
+    min-width: 120px; /* Ensures a minimum size */
+    max-width: 300px; /* Restricts maximum width */
+  }
+  
+  .menu-options div {
+    padding: 6px;
+    color: #343a40;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    white-space: nowrap; /* Prevents text from wrapping */
+  }
+  
+  .menu-options div:hover {
+    background-color: #007bff;
+    color: #ffffff;
+  }
+  
+  .menu-options div:not(:last-child) {
+    border-bottom: 1px solid #ddd;
+  }
+  
+  .fas.fa-ellipsis-v {
+    font-size: 24px;  /* Adjust the size */
+    color: #f3f3f3;  /* Set the color */
+    transition: transform 0.3s ease, color 0.3s ease;
+  }
+  
+  .fas.fa-ellipsis-v:hover {
+    transform: scale(1.2);  /* Slight zoom on hover */
+    color: #f3f3f3;  /* Change color on hover */
+  }

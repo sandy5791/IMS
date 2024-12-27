@@ -10,11 +10,13 @@
     <button appBackToTop [scrollContainer]="scrollContainer" class="back-to-top">
         <i class="fas fa-arrow-up"></i>
     </button>
-
+    <Menu-dropDown #Rest_fitCol [gridApi]="gridApi">
+    </Menu-dropDown>
+ 
 </div>
 
 <!-- Sales Order Form -->
-<div #scrollContainer class="container mt-1 scroll-container">
+<div #scrollContainer class="container  scroll-container">
     <form [formGroup]="SalesOrderForm">
         <!-- First Row -->
         <div class="row mb-0">
@@ -94,8 +96,9 @@
     <!-- AG Grid Table -->
     <div class="ag-grid-container">
         <ag-grid-angular style="width: 100%;" class="ag-theme-alpine" [rowData]="rowData" [columnDefs]="columnDefs"
-            [gridOptions]="gridOptions" [pagination]="true" [domLayout]="'autoHeight'"
-            (gridReady)="onGridReady($event)">
+          [gridOptions]="gridOptions" [pagination]="true" [domLayout]="'autoHeight'"
+            (gridReady)="onGridReady($event)" [rowHeight]="rowHeight"  >
         </ag-grid-angular>
+        
     </div>
 </div>

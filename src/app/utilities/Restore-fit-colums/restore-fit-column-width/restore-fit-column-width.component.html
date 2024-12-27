@@ -1,0 +1,8 @@
+<div class="custom-header">
+    <span class="fas fa-ellipsis-v" style="cursor: pointer;"  (click)="toggleMenu()"></span>
+    
+    <div class="menu-options" *ngIf="showMenu">
+      <div (click)="onResize()">Fit-Columns</div>
+      <div (click)="restoreColumns()">Restore-Columns</div>
+    </div>
+  </div>
