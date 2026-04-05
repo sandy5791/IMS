@@ -1,0 +1,86 @@
+<div class="modal-overlay" *ngIf="isVisible">
+  <div class="glass-modal card p-4 shadow-lg border-0" [@fadeInUpOnEnter]>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h5 class="text-white m-0">
+        <i [class]="iconClass + ' me-2 text-primary'"></i>{{ title }}
+      </h5>
+      <button class="btn btn-sm btn-outline-light rounded-circle" style="width: 30px; height: 30px; padding: 0;" (click)="close()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- Mode Switcher -->
+    <ul class="nav nav-pills nav-fill mb-4 glass-nav-pills">
+      <li class="nav-item">
+        <button class="nav-link" [class.active]="lookupMode === 'search'" (click)="lookupMode = 'search'">
+          <i class="fas fa-search me-1"></i>Search
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" [class.active]="lookupMode === 'create'" (click)="lookupMode = 'create'">
+          <i class="fas fa-plus me-1"></i>Create New
+        </button>
+      </li>
+    </ul>
+
+    <!-- Search Mode -->
+    <div *ngIf="lookupMode === 'search'">
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <div class="glass-input-group flex-grow-1 mb-0">
+          <i class="fas fa-search input-icon" style="top: 1.1rem;"></i>
+          <input type="text" class="glass-input py-2" placeholder="Search..." [(ngModel)]="searchText" (input)="filterData()">
+        </div>
+        <select class="glass-input bg-transparent text-white border-0 opacity-75 ps-2 pe-4 py-2" style="width: auto; font-size: 0.85rem;" [(ngModel)]="sortOrder" (change)="onSortChange()">
+          <option value="latest" class="bg-dark text-white">Latest</option>
+          <option value="name-asc" class="bg-dark text-white">Name A-Z</option>
+          <option value="name-desc" class="bg-dark text-white">Name Z-A</option>
+        </select>
+      </div>
+
+      <div class="list-group list-group-flush rounded-3 custom-scrollbar" style="max-height: 500px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.08);">
+        <button *ngFor="let item of filteredItems" class="list-group-item list-group-item-action bg-transparent text-white border-0 border-bottom border-light border-opacity-10 px-3 py-3 d-flex justify-content-between align-items-center glass-list-item" (click)="selectItem(item)">
+          <div class="d-flex align-items-center gap-3">
+            <div class="rounded-circle d-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25" style="width: 40px; height: 40px; font-weight: bold;">
+              {{ item.name.charAt(0).toUpperCase() }}
+            </div>
+            <div>
+              <div class="fw-bold text-white-50 small mb-1" style="letter-spacing: 0.5px;">{{ getIdField(item) }}</div>
+              <strong class="text-white h6 mb-0">{{ item.name }}</strong> <br>
+              <div class="mt-1">
+                <small class="opacity-50 me-2"><i class="fas fa-phone-alt me-1"></i>{{ item.phone || 'N/A' }}</small>
+                <small class="opacity-50"><i class="fas fa-envelope-open me-1"></i>{{ item.email || 'N/A' }}</small>
+              </div>
+            </div>
+          </div>
+          <i class="fas fa-chevron-right opacity-25"></i>
+        </button>
+        <div *ngIf="filteredItems.length === 0" class="text-center p-5 text-white opacity-25">
+          <i class="fas fa-folder-open fa-2x mb-3"></i><br>
+          No records matching your search.
+        </div>
+      </div>
+    </div>
+
+    <!-- Create Mode -->
+    <div *ngIf="lookupMode === 'create'" [formGroup]="entityForm">
+      <div class="glass-input-group mb-3">
+        <i class="fas fa-user input-icon"></i>
+        <input type="text" class="glass-input" formControlName="name" placeholder=" ">
+        <label class="glass-label">Name *</label>
+      </div>
+      <div class="glass-input-group mb-3">
+        <i class="fas fa-phone input-icon"></i>
+        <input type="text" class="glass-input" formControlName="phone" placeholder=" ">
+        <label class="glass-label">Phone Number</label>
+      </div>
+      <div class="glass-input-group mb-4">
+        <i class="fas fa-envelope input-icon"></i>
+        <input type="email" class="glass-input" formControlName="email" placeholder=" ">
+        <label class="glass-label">Email Address</label>
+      </div>
+      <button class="btn-glow w-100" (click)="createEntity()" [disabled]="entityForm.invalid">
+        <i class="fas fa-save me-2"></i>Create & Select
+      </button>
+    </div>
+  </div>
+</div>

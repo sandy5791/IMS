@@ -1,0 +1,208 @@
+// Page Shell — Redesigned compact header
+
+:host {
+  display: block;
+  width: 100%;
+}
+
+.page-shell {
+  padding: 10px;
+  width: 100%;
+  margin: 0;
+}
+
+// --- Combined Header ---
+.page-header {
+  &:hover {
+    transform: none;
+    background: var(--glass-bg);
+    box-shadow: var(--ims-shadow);
+  }
+}
+
+// Breadcrumb — subtle inline style
+.page-breadcrumb {
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+
+  .breadcrumb {
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    border: none;
+
+    .breadcrumb-item {
+      a {
+        color: rgba(255, 255, 255, 0.45);
+        transition: color 0.2s ease;
+        &:hover { color: var(--ims-accent); }
+      }
+      &.active { color: rgba(255, 255, 255, 0.7); }
+
+      + .breadcrumb-item::before {
+        color: rgba(255, 255, 255, 0.2);
+      }
+    }
+  }
+}
+
+// Main header row
+.header-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+// Back button — minimal circle
+.back-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  flex-shrink: 0;
+
+  &:hover {
+    background: rgba(139, 92, 246, 0.15);
+    border-color: rgba(139, 92, 246, 0.4);
+    color: #fff;
+    transform: translateX(-2px);
+  }
+}
+
+.page-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.page-subtitle {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: 0.15rem;
+}
+
+// Action buttons
+.header-actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  
+  // Target the transcluded container element that holds the actual buttons
+  ::ng-deep [header-actions] {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+}
+
+// --- Content ---
+.page-content {
+  min-height: 400px;
+
+  &:hover {
+    transform: none;
+    background: var(--glass-bg);
+    box-shadow: var(--ims-shadow);
+  }
+}
+
+// --- Responsive ---
+@media (max-width: 992px) {
+  .header-main {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .header-actions {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-shell {
+    padding: 1rem;
+  }
+
+  .page-header {
+    padding: 1rem !important;
+  }
+
+  .page-content {
+    padding: 1rem !important;
+  }
+
+  .page-title {
+    font-size: 1.2rem;
+  }
+
+  .header-actions {
+    gap: 0.4rem;
+
+    ::ng-deep .btn-glow,
+    ::ng-deep .btn-glass {
+      font-size: 0.8rem;
+      padding: 0.4rem 0.75rem;
+    }
+  }
+}
+
+// --- Component-Scoped Light Theme Overrides ---
+:host-context(body.light-theme) {
+  .page-breadcrumb .breadcrumb {
+    border-bottom-color: rgba(0, 0, 0, 0.1);
+    
+    .breadcrumb-item {
+      a {
+        color: rgba(0, 0, 0, 0.5);
+        &:hover { color: var(--ims-primary-dark); }
+      }
+      &.active { color: #1a1a2e; }
+      
+      + .breadcrumb-item::before {
+        color: rgba(0, 0, 0, 0.3);
+      }
+    }
+  }
+
+  .back-btn {
+    border-color: rgba(0, 0, 0, 0.15);
+    background: rgba(0, 0, 0, 0.05);
+    color: #1a1a2e;
+
+    &:hover {
+      background: rgba(99, 102, 241, 0.1);
+      border-color: rgba(99, 102, 241, 0.3);
+      color: var(--ims-primary-dark);
+    }
+  }
+
+  .page-title {
+    color: #1a1a2e;
+  }
+
+  .page-subtitle {
+    color: rgba(0, 0, 0, 0.55);
+  }
+}

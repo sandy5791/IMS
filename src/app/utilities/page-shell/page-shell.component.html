@@ -1,0 +1,49 @@
+<div class="page-shell" [@fadeInOnEnter]>
+  <!-- Combined Page Header -->
+  <div class="glass-card page-header mb-3 p-3">
+    <!-- Top row: breadcrumb -->
+    <nav aria-label="breadcrumb" *ngIf="breadcrumbs.length > 0" class="page-breadcrumb">
+      <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item">
+          <a routerLink="/dashboard" class="text-decoration-none">
+            <i class="fas fa-home me-1"></i>Dashboard
+          </a>
+        </li>
+        <li class="breadcrumb-item" *ngFor="let crumb of breadcrumbs; let last = last"
+            [ngClass]="{ 'active': last }" aria-current="page">
+          <a *ngIf="!last && crumb.link" [routerLink]="crumb.link" class="text-decoration-none">
+            {{ crumb.label }}
+          </a>
+          <span *ngIf="last || !crumb.link">{{ crumb.label }}</span>
+        </li>
+      </ol>
+    </nav>
+
+    <!-- Main row: back + title + actions -->
+    <div class="header-main">
+      <div class="header-left">
+        <button *ngIf="showBackButton"
+                type="button"
+                class="back-btn"
+                [routerLink]="backRoute"
+                aria-label="Go back">
+          <i class="fas fa-arrow-left"></i>
+        </button>
+        <div>
+          <h1 class="page-title mb-0" *ngIf="title">{{ title }}</h1>
+          <p class="page-subtitle mb-0" *ngIf="subtitle">{{ subtitle }}</p>
+        </div>
+      </div>
+
+      <!-- Action buttons slot -->
+      <div class="header-actions">
+        <ng-content select="[header-actions]"></ng-content>
+      </div>
+    </div>
+  </div>
+
+  <!-- Page Content -->
+  <div class="glass-card page-content p-3 p-md-4">
+    <ng-content></ng-content>
+  </div>
+</div>

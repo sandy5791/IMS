@@ -1,0 +1,34 @@
+{
+  "LOGIN": {
+    "PORTAL": "IMS Portal",
+    "WELCOME": "Welcome Back",
+    "SUBTITLE": "Sign in to manage your inventory and operations.",
+    "USERNAME": "Username",
+    "PASSWORD": "Password",
+    "SUBMIT": "Login to Dashboard",
+    "AUTHENTICATING": "Authenticating...",
+    "ADMIN_LOGIN": "Admin Login",
+    "ERRORS": {
+      "REQUIRED": "Required field",
+      "MIN_LENGTH": "Minimum 6 characters"
+    }
+  },
+  "DASHBOARD": {
+    "BRAND": "IMS Portal",
+    "HOME": "Dashboard",
+    "MENUS": "Launchpad",
+    "SALES": "Sales",
+    "PURCHASES": "Purchases",
+    "REPORTS": "Reports",
+    "INVENTORY": "Inventory",
+    "CUSTOMERS": "Customers",
+    "VENDORS": "Vendors",
+    "LOGS": "Audit Logs",
+    "PORTAL": "Portal",
+    "SEARCH": "Search modules...",
+    "LOGOUT": "Logout",
+    "PROFILE": "Profile",
+    "SETTINGS": "Settings",
+    "LANGUAGE": "Language"
+  }
+}

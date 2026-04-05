@@ -1,0 +1,17 @@
+
+.portal-container { padding: 1.5rem; }
+.glass-card { background: rgba(255,255,255,0.03); backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; }
+.avatar-lrg { width: 80px; height: 80px; background: rgba(99,102,241,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto; color: #6366f1; font-size: 2rem; }
+.profile-stats { margin-top: 2rem; }
+.p-stat { display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.p-stat:last-child { border: none; }
+.p-stat .lbl { color: rgba(255,255,255,0.4); font-size: 0.85rem; }
+.p-stat .val { color: white; font-weight: 600; font-size: 0.95rem; }
+.text-emerald { color: #10b981; }
+.text-amber { color: #f59e0b; }
+.status-badge { background: rgba(16,185,129,0.1); color: #10b981; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
+table { width: 100%; background: transparent !important; }
+th { border-bottom-color: rgba(255,255,255,0.05) !important; color: rgba(255,255,255,0.4) !important; font-size: 0.75rem !important; }
+td { border-bottom-color: rgba(255,255,255,0.03) !important; color: white !important; padding-top: 1rem !important; padding-bottom: 1rem !important; }
+.row-hover:hover { background: rgba(255,255,255,0.02); }
+::ng-deep .mat-paginator { background: transparent !important; color: white !important; }

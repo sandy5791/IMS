@@ -1,0 +1,63 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@400;500;600&display=swap');
+
+.success-anim {
+  animation: successOut 0.5s ease-in forwards;
+}
+
+@keyframes successOut {
+  to { opacity: 0; transform: scale(0.92) translateY(-20px); }
+}
+
+.brand-logo {
+  .icon-wrapper {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto;
+    background: linear-gradient(135deg, var(--ims-primary-dark), var(--ims-primary));
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    color: white; // Always white to pop against gradient
+    box-shadow: 0 10px 25px rgba(99, 102, 241, 0.5);
+    transform: rotate(-10deg);
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  &:hover .icon-wrapper {
+    transform: rotate(0deg) scale(1.05);
+  }
+
+  .brand-text {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    // Inherits color from body theme wrapper
+  }
+}
+
+.welcome-text {
+  font-family: 'Syne', sans-serif;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0;
+  // Inherits color from body theme wrapper
+}
+
+// Ensure the button transitions nicely too
+.btn-toggle-pass {
+  position: absolute;
+  right: 1.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  // Let this fall back to the global variables we set
+  font-size: 1.1rem;
+  padding: 0;
+  cursor: pointer;
+  transition: var(--ims-transition);
+  z-index: 2;
+}

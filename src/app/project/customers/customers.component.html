@@ -1,0 +1,197 @@
+<app-page-shell
+  title="Customer Management"
+  subtitle="Manage your customer relationships and details"
+  [breadcrumbs]="[{ label: 'Customers' }]">
+
+  <div header-actions>
+    <button type="button" class="btn-glow" (click)="addCustomer()">
+      <i class="fas fa-plus me-2"></i>Add Customer
+    </button>
+    <button type="button" class="btn btn-danger" (click)="removeSelected()" [disabled]="!hasSelectedItems()">
+      <i class="fas fa-trash me-2"></i>Remove Selected
+    </button>
+  </div>
+
+  <!-- Add Customer Form -->
+  <div class="glass-card mb-3 mt-2" [@slideInLeftOnEnter]>
+    <div class="card-header border-bottom border-light border-opacity-10 py-2 px-3">
+      <h5 class="mb-0 text-white">
+        <i class="fas fa-user-plus me-2 text-primary"></i>Add New Customer
+      </h5>
+    </div>
+    <div class="card-body p-3">
+      <form [formGroup]="customerForm" class="row">
+        
+        <div class="col-md-2">
+          <div class="glass-input-group">
+            <i class="fas fa-id-badge input-icon"></i>
+            <input id="customerId" type="text" class="glass-input" formControlName="customerId" placeholder=" " />
+            <label for="customerId" class="glass-label">Customer ID</label>
+            <div class="glass-invalid-feedback" *ngIf="customerForm.get('customerId')?.invalid && customerForm.get('customerId')?.touched">
+              Required
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="glass-input-group">
+            <i class="fas fa-user input-icon"></i>
+            <input id="name" type="text" class="glass-input" formControlName="name" placeholder=" " />
+            <label for="name" class="glass-label">Full Name</label>
+            <div class="glass-invalid-feedback" *ngIf="customerForm.get('name')?.invalid && customerForm.get('name')?.touched">
+              Required
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="glass-input-group">
+            <i class="fas fa-envelope input-icon"></i>
+            <input id="email" type="email" class="glass-input" formControlName="email" placeholder=" " />
+            <label for="email" class="glass-label">Email Address</label>
+            <div class="glass-invalid-feedback" *ngIf="customerForm.get('email')?.invalid && customerForm.get('email')?.touched">
+              Valid Email Required
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-2">
+          <div class="glass-input-group">
+            <i class="fas fa-phone input-icon"></i>
+            <input id="phone" type="text" class="glass-input" formControlName="phone" placeholder=" " />
+            <label for="phone" class="glass-label">Phone</label>
+            <div class="glass-invalid-feedback" *ngIf="customerForm.get('phone')?.invalid && customerForm.get('phone')?.touched">
+              Required
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-2">
+          <div class="glass-input-group">
+            <i class="fas fa-star input-icon text-warning"></i>
+            <input id="loyaltyPoints" type="number" class="glass-input" formControlName="loyaltyPoints" placeholder=" " min="0" />
+            <label for="loyaltyPoints" class="glass-label">Loyalty Pts</label>
+          </div>
+        </div>
+
+        <div class="col-md-10">
+          <div class="glass-input-group">
+            <i class="fas fa-map-marker-alt input-icon"></i>
+            <input id="address" type="text" class="glass-input" formControlName="address" placeholder=" " />
+            <label for="address" class="glass-label">Address</label>
+            <div class="glass-invalid-feedback" *ngIf="customerForm.get('address')?.invalid && customerForm.get('address')?.touched">
+              Required
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-2 text-end d-flex align-items-center justify-content-end mb-3">
+          <button type="button" class="btn-glow" (click)="addCustomer()" [disabled]="customerForm.invalid">
+            <i class="fas fa-save me-2"></i>Save Customer
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Customer Grid -->
+  <div class="glass-card" [@fadeInUpOnEnter]>
+    <div class="card-header border-bottom border-light border-opacity-10 d-flex justify-content-between align-items-center py-2 px-3">
+      <h5 class="mb-0 text-white">
+        <i class="fas fa-users me-2 text-primary"></i>Customer Directory ({{ customersList.length }})
+      </h5>
+      <div class="d-flex gap-3 align-items-center">
+        <div class="glass-input-group m-0" style="width: 200px;">
+          <i class="fas fa-search input-icon" style="font-size: 0.9rem;"></i>
+          <input type="text" class="glass-input py-2" placeholder=" " [(ngModel)]="searchText" (input)="onSearchChange()">
+          <label class="glass-label" style="font-size: 0.8rem;">Search</label>
+        </div>
+        <button type="button" class="btn-glass btn-sm" (click)="exportToCsv()">
+          <i class="fas fa-download me-1"></i>Export
+        </button>
+      </div>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-container">
+        <table mat-table [dataSource]="dataSource" matSort class="w-100">
+
+          <!-- Checkbox Column -->
+          <ng-container matColumnDef="select">
+            <th mat-header-cell *matHeaderCellDef>
+              <mat-checkbox (change)="toggleAllRows()"
+                            [checked]="isAllSelected()"
+                            [indeterminate]="selection.hasValue() && !isAllSelected()">
+              </mat-checkbox>
+            </th>
+            <td mat-cell *matCellDef="let row">
+              <mat-checkbox (click)="$event.stopPropagation()"
+                            (change)="selection.toggle(row)"
+                            [checked]="selection.isSelected(row)">
+              </mat-checkbox>
+            </td>
+          </ng-container>
+
+          <!-- Index Column -->
+          <ng-container matColumnDef="index">
+            <th mat-header-cell *matHeaderCellDef>#</th>
+            <td mat-cell *matCellDef="let i = index">{{ i + 1 }}</td>
+          </ng-container>
+
+          <!-- Customer ID -->
+          <ng-container matColumnDef="customerId">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Customer ID</th>
+            <td mat-cell *matCellDef="let row">
+              <input class="inline-edit-input text-info" [(ngModel)]="row.customerId" />
+            </td>
+          </ng-container>
+
+          <!-- Name -->
+          <ng-container matColumnDef="name">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Name</th>
+            <td mat-cell *matCellDef="let row">
+              <input class="inline-edit-input font-weight-bold" [(ngModel)]="row.name" />
+            </td>
+          </ng-container>
+
+          <!-- Email -->
+          <ng-container matColumnDef="email">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Email</th>
+            <td mat-cell *matCellDef="let row">
+              <input type="email" class="inline-edit-input" [(ngModel)]="row.email" />
+            </td>
+          </ng-container>
+
+          <!-- Phone -->
+          <ng-container matColumnDef="phone">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Phone</th>
+            <td mat-cell *matCellDef="let row">
+              <input type="text" class="inline-edit-input" [(ngModel)]="row.phone" />
+            </td>
+          </ng-container>
+
+          <!-- Address -->
+          <ng-container matColumnDef="address">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Address</th>
+            <td mat-cell *matCellDef="let row">
+              <input class="inline-edit-input" [(ngModel)]="row.address" />
+            </td>
+          </ng-container>
+
+          <!-- Loyalty Points -->
+          <ng-container matColumnDef="loyaltyPoints">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Points</th>
+            <td mat-cell *matCellDef="let row">
+               <input type="number" class="inline-edit-input text-center text-warning" [(ngModel)]="row.loyaltyPoints" min="0" />
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"
+              [class.selected]="selection.isSelected(row)">
+          </tr>
+        </table>
+        <mat-paginator [pageSizeOptions]="[5, 10, 25]" [pageSize]="10" showFirstLastButtons></mat-paginator>
+      </div>
+    </div>
+  </div>
+</app-page-shell>

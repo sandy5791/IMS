@@ -1,106 +1,157 @@
-
-import { Component, ElementRef, HostListener } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, HostListener, inject, OnInit } from '@angular/core';
 import { NavigationEnd, Router, RouterModule, RouterOutlet } from '@angular/router';
-import { AuthService } from '../services/authService/auth-service.service';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { fadeInOnEnter, zoomInOnEnter, slideInLeftOnEnter } from '@ngverse/motion/animatecss';
+
+import { AuthService } from '../services/auth-service/auth-service.service';
+import { TranslatePipe } from '../pipes/translate.pipe';
+import { TranslationService } from '../services/translation.service';
+import { StorageService } from '../services/storage.service';
+import { ThemeService } from '../services/theme.service';
+
+interface DashboardMenuItem {
+  name: string;
+  icon: string;
+  path: string;
+}
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [RouterOutlet, CommonModule, FormsModule, RouterModule],
+  imports: [RouterOutlet, CommonModule, FormsModule, RouterModule, TranslatePipe],
   templateUrl: './dashboard.component.html',
-  styleUrls: ['./dashboard.component.scss']
+  styleUrls: ['./dashboard.component.scss'],
+  animations: [
+    fadeInOnEnter({ duration: 300 }),
+    zoomInOnEnter({ duration: 500 }),
+    slideInLeftOnEnter({ duration: 500 })
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class DashboardComponent {
+export class DashboardComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
 
-  
-  isSidebarCollapsed: boolean = false;
-  isDropdownOpen: Boolean = false;
+  isSidebarCollapsed = false;
+  isDropdownOpen = false;
+  isLightTheme = false;
   searchQuery = '';
-  filteredSuggestions: any[] = [];
+  showSuggestions = false;
+  filteredSuggestions: DashboardMenuItem[] = [];
+  activeLink = '';
+  loggedInUser = '';
+  currentLanguage: string;
 
-  menuItems = [
+  menuItems: DashboardMenuItem[] = [
+    { name: 'Dashboard', icon: 'fas fa-chart-pie', path: '/dashboard' },
+    { name: 'Menus', icon: 'fas fa-th-large', path: '/dashboard/menus' },
     { name: 'Sales', icon: 'fas fa-chart-line', path: '/dashboard/sales' },
     { name: 'Purchases', icon: 'fas fa-box', path: '/dashboard/purchases' },
     { name: 'Reports', icon: 'fas fa-file-alt', path: '/dashboard/reports' },
-    { name: 'Inventory', icon: 'fas fa-cogs', path: '/dashboard/inventory' }
+    { name: 'Inventory', icon: 'fas fa-cogs', path: '/dashboard/inventory' },
+    { name: 'Customers', icon: 'fas fa-users', path: '/dashboard/customers' },
+    { name: 'Vendors', icon: 'fas fa-truck', path: '/dashboard/vendors' },
+    { name: 'Logs', icon: 'fas fa-shield-alt', path: '/dashboard/logs' },
+    { name: 'Portal', icon: 'fas fa-id-card', path: '/dashboard/portal' }
   ];
-showSuggestions: any;
-  showSearch: boolean = true;
 
-  constructor(private authService: AuthService, private router: Router,private elementRef: ElementRef) {
-    this.router.events.subscribe(event => {
+  constructor(
+    private authService: AuthService,
+    private router: Router,
+    private translationService: TranslationService,
+    private storage: StorageService,
+    private themeService: ThemeService,
+    private cdr: ChangeDetectorRef
+  ) {
+    this.currentLanguage = this.translationService.currentLanguage;
+    this.router.events.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(event => {
       if (event instanceof NavigationEnd) {
-        this.setActive(this.router.url);
-        this.showSearch = !['/dashboard/sales', '/dashboard/purchases', '/dashboard/reports', '/dashboard/inventory'].includes(event.url);
+        this.activeLink = event.urlAfterRedirects;
+        this.cdr.markForCheck();
       }
     });
-   }
-  activeLink: string = '';
-  LogedInUser = localStorage.getItem('LogedInUser')
-  setActive(link: string) {
-    this.activeLink = link;
-  }
-  logout() {
-    this.authService.logout(); // Clear authentication data
-    this.router.navigate(['/login']); // Redirect to login
   }
 
-  toggleSidebar() {
+  ngOnInit(): void {
+    this.isLightTheme = this.themeService.isLightTheme;
+    this.loggedInUser = this.storage.getItem<string>('LoggedInUser') || 'User';
+  }
+
+  trackByMenuPath(_index: number, item: DashboardMenuItem): string {
+    return item.path;
+  }
+
+  toggleSidebar(): void {
     this.isSidebarCollapsed = !this.isSidebarCollapsed;
   }
 
-  collapseSidebar() {
-    this.isSidebarCollapsed = true; // Auto-collapse sidebar after selection
-  }
-  toggleDropdown() {
+  toggleDropdown(): void {
     this.isDropdownOpen = !this.isDropdownOpen;
   }
 
-  filterSuggestions() {
-    if (this.searchQuery.length == 0) {
-      this.filteredSuggestions = []
-     this .showSuggestions = false;
-    }
-    else {
-      this.filteredSuggestions = this.menuItems.filter(item =>
-        item.name.toLowerCase().includes(this.searchQuery.toLowerCase())
-      );
-      if(this.filteredSuggestions.length > 0)
-      {
-        this .showSuggestions = true;
-      }
-      else 
-      {
-        this .showSuggestions = false;
-      }
+  setActive(link: string): void {
+    this.activeLink = link;
+  }
+
+  collapseSidebar(): void {
+    this.isSidebarCollapsed = true;
+  }
+
+  onSearchFocus(): void {
+    if (!this.searchQuery) {
+      this.filteredSuggestions = this.menuItems.slice(0, 5);
+      this.showSuggestions = true;
     }
   }
 
-  navigateTo(menu: any) {
-    this.router.navigate([menu.path]);
-    this.searchQuery = ''; // Clear search query after navigation
-    this.filteredSuggestions = []; // Clear suggestions
+  filterSuggestions(): void {
+    if (!this.searchQuery) {
+      this.showSuggestions = false;
+      return;
+    }
+    this.filteredSuggestions = this.menuItems.filter(item =>
+      item.name.toLowerCase().includes(this.searchQuery.toLowerCase())
+    );
+    this.showSuggestions = this.filteredSuggestions.length > 0;
   }
-  goHome() {
-    // Optional: You can do any other action here before routing
-    this.router.navigate(['/dashboard']); // Navigate to the dashboard
-}
+
+  navigateTo(path: string): void {
+    this.router.navigate([path]);
+    this.searchQuery = '';
+    this.showSuggestions = false;
+  }
+
+  toggleTheme(): void {
+    this.themeService.toggleTheme();
+    this.isLightTheme = this.themeService.isLightTheme;
+  }
+
+  logout(): void {
+    this.authService.logout();
+  }
+
+  switchLanguage(lang: string): void {
+    this.translationService.use(lang);
+    this.currentLanguage = lang;
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  onKeydown(event: KeyboardEvent): void {
+    if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
+      event.preventDefault();
+      document.getElementById('global-search')?.focus();
+    }
+  }
 
   @HostListener('document:click', ['$event'])
-  onDocumentClick(event: MouseEvent) {
+  onDocumentClick(event: MouseEvent): void {
     const clickedElement = event.target as HTMLElement;
-    if (
-      clickedElement.id !== 'search-box' &&
-      clickedElement.id !== 'suggestions-list' &&
-      !clickedElement.closest('#suggestions-list')
-    ) {
+    if (!clickedElement.closest('.global-search-container')) {
       this.showSuggestions = false;
     }
-    if(clickedElement.id !== 'User-dropDown' && clickedElement.id !== 'users')
-    {
+    if (!clickedElement.closest('.user-controls')) {
       this.isDropdownOpen = false;
     }
-  
   }
 }

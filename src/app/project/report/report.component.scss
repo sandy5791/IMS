@@ -1,0 +1,64 @@
+// Report Page - overrides
+
+.icon-glow {
+  filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.2));
+  transition: all 0.3s ease;
+}
+
+.glass-card-hover:hover .icon-glow {
+  transform: scale(1.1);
+  filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.4));
+}
+
+.glass-inline-input {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #fff;
+  border-radius: 6px;
+  padding: 4px 8px;
+  width: 100%;
+  transition: all 0.2s;
+
+  &:focus {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(139, 92, 246, 0.5);
+    outline: none;
+  }
+}
+
+.glass-table-row {
+  transition: background 0.2s;
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+  }
+}
+
+.glass-thead { background: rgba(0, 0, 0, 0.4); }
+.glass-th { color: rgba(255, 255, 255, 0.8); font-family: 'Syne', sans-serif; }
+.glass-footer { background: rgba(0, 0, 0, 0.2); }
+
+select.glass-inline-input {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='white' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.25rem center;
+  background-size: 12px 10px;
+  padding-right: 1.2rem !important;
+
+  option {
+    background: #1e1b4b;
+    color: white;
+  }
+}
+
+:host-context(body.light-theme) {
+  select.glass-inline-input {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%231a1a2e' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+    
+    option {
+      background: #ffffff;
+      color: #1a1a2e;
+    }
+  }
+}

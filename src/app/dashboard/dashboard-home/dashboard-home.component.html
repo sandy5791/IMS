@@ -1,0 +1,106 @@
+
+<div class="dashboard-home" [@fadeInUpOnEnter]>
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4 pt-1">
+        <div>
+            <h1 class="text-white fs-4 fw-bold mb-1">Overview Dashboard</h1>
+            <p class="text-white-50 small mb-0">Welcome back to your business summary</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-light px-3 border-0 bg-white-10 rounded-3">
+                <i class="fas fa-calendar-alt me-2"></i> Last 30 Days
+            </button>
+            <button class="btn btn-sm btn-primary px-3 rounded-pill">
+                <i class="fas fa-download me-2"></i> Report
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+        <a routerLink="/dashboard/sales" class="stat-card text-decoration-none" [@zoomInOnEnter]>
+            <div class="icon indigo"><i class="fas fa-dollar-sign"></i></div>
+            <div class="content">
+                <div class="label">Total Sales Revenue</div>
+                <div class="value">{{ totalSales | currency }}</div>
+            </div>
+        </a>
+        <a routerLink="/dashboard/purchases" class="stat-card text-decoration-none" [@zoomInOnEnter]>
+            <div class="icon blue"><i class="fas fa-shopping-cart"></i></div>
+            <div class="content">
+                <div class="label">Total Purchase Cost</div>
+                <div class="value text-danger">{{ totalPurchases | currency }}</div>
+            </div>
+        </a>
+        <a routerLink="/dashboard/inventory" class="stat-card text-decoration-none" [@zoomInOnEnter]>
+            <div class="icon emerald"><i class="fas fa-boxes-stacked"></i></div>
+            <div class="content">
+                <div class="label">Inventory Value</div>
+                <div class="value">{{ totalInventoryValue | currency }}</div>
+            </div>
+        </a>
+        <div class="stat-card" [@zoomInOnEnter]>
+            <div class="icon amber"><i class="fas fa-triangle-exclamation"></i></div>
+            <div class="content">
+                <div class="label">Low Stock Alerts</div>
+                <div class="value" [class.text-warning]="lowStockItemsCount > 0">{{ lowStockItemsCount }} Items</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="main-grid">
+        <!-- Sales Chart Section -->
+        <div class="chart-container" [@slideInLeftOnEnter]>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="text-white fs-6 fw-bold mb-1">Sales Trends</h3>
+                    <p class="text-white-50 extra-small mb-0">Revenue over regular intervals</p>
+                </div>
+                <div class="text-white-50"><i class="fas fa-ellipsis-v"></i></div>
+            </div>
+            
+            <div style="height: 300px;">
+                <canvas baseChart
+                        [data]="lineChartData"
+                        [options]="lineChartOptions"
+                        [type]="'line'">
+                </canvas>
+            </div>
+        </div>
+
+        <!-- Recent Activity Section -->
+        <div class="activity-card" [@fadeInUpOnEnter]>
+            <div class="header">
+                <h3>Recent Transactions</h3>
+                <button class="btn-view-all">View All</button>
+            </div>
+
+            <div class="activity-list">
+                <a routerLink="/dashboard/sales" class="activity-item text-decoration-none" *ngFor="let sale of recentSales">
+                    <div class="avatar"><i class="fas fa-arrow-up-right-dots text-success"></i></div>
+                    <div class="details">
+                        <div class="name">Sale: {{ sale.customerName }}</div>
+                        <div class="info">ID: {{ sale.orderId }} • {{ sale.date }}</div>
+                    </div>
+                    <div class="amount positive text-success">+ {{ sale.totalAmount | currency }}</div>
+                </a>
+
+                <a routerLink="/dashboard/purchases" class="activity-item text-decoration-none" *ngFor="let pur of recentPurchases">
+                    <div class="avatar"><i class="fas fa-truck-loading text-danger"></i></div>
+                    <div class="details">
+                        <div class="name">Purchase: {{ pur.vendorName }}</div>
+                        <div class="info">ID: {{ pur.orderId }} • {{ pur.date }}</div>
+                    </div>
+                    <div class="amount negative text-danger">- {{ pur.totalAmount | currency }}</div>
+                </a>
+
+                <!-- Empty State -->
+                <div class="text-center py-5" *ngIf="recentSales.length === 0 && recentPurchases.length === 0">
+                    <i class="fas fa-inbox text-white-50 fs-1 mb-3"></i>
+                    <p class="text-white-50">No recent activity found</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

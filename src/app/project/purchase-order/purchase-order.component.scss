@@ -1,0 +1,23 @@
+// Purchase Order Component Styles
+// Shared styles (card, btn, form) come from central styles.scss
+
+:host {
+  display: block;
+}
+
+.table-container {
+  margin: -1px; 
+}
+
+.grand-total {
+  animation: bounce 1s ease-in-out;
+}
+
+@media (max-width: 768px) {
+  .grand-total {
+    width: 100%;
+    margin-left: 0 !important;
+    margin-top: 0.5rem;
+  }
+}
+

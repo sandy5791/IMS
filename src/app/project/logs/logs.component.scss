@@ -1,0 +1,34 @@
+
+.logs-container { padding: 1rem; }
+.glass-panel {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+}
+.glass-input {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    &:focus { background: rgba(255, 255, 255, 0.08); border-color: #6366f1; color: white; box-shadow: none; }
+}
+.user-badge { background: rgba(255,255,255,0.05); font-size: 0.8rem; color: #fff; }
+.module-chip { 
+    font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
+    &.sales { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+    &.purchases { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+    &.inventory { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+    &.auth { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+}
+.details-cell { max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.indicator { 
+    &.info { color: #3b82f6; }
+    &.warning { color: #f59e0b; }
+    &.error { color: #ef4444; }
+}
+table { width: 100%; background: transparent !important; }
+th { color: rgba(255,255,255,0.4) !important; font-weight: 500 !important; font-size: 0.75rem !important; text-transform: uppercase; border-bottom: 2px solid rgba(255,255,255,0.05) !important; }
+td { border-bottom: 1px solid rgba(255,255,255,0.03) !important; color: white !important; font-size: 0.9rem !important; }
+tr:hover { background: rgba(255,255,255,0.02) !important; }
+::ng-deep .mat-paginator { background: transparent !important; color: white !important; }
+::ng-deep .mat-paginator-range-label, ::ng-deep .mat-paginator-navigation-next, ::ng-deep .mat-paginator-navigation-previous { color: white !important; }

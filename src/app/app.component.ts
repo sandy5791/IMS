@@ -1,16 +1,14 @@
-import { Component } from '@angular/core';
-import {  RouterModule, RouterOutlet } from '@angular/router';
-import { CommonModule } from '@angular/common';
-import { LoginComponent } from './Login/login/login.component';
-import { DashboardComponent } from './dashboard/dashboard.component';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
 
 @Component({
   selector: 'app-root',
+  standalone: true,
+  imports: [RouterOutlet],
   templateUrl: './app.component.html',
-  styleUrl: './app.component.scss',
-  imports: [RouterOutlet]
+  styleUrls: ['./app.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AppComponent {
   title = 'IMS';
-  constructor() { console.log('entered app componet') }
 }

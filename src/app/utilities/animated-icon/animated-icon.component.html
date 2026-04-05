@@ -1,0 +1,11 @@
+<div
+  class="lottie-container"
+  [style.width]="width"
+  [style.height]="height"
+  (mouseenter)="onHover()"
+  (mouseleave)="onHoverOut()">
+  <ng-lottie
+    [options]="options"
+    (animationCreated)="animationCreated($event)">
+  </ng-lottie>
+</div>

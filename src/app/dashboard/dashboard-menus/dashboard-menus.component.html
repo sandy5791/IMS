@@ -1,0 +1,20 @@
+
+<div class="menus-container container-fluid py-4" [@fadeInUpOnEnter]>
+    <div class="text-center mb-5">
+        <h1 class="text-white fw-bold mb-2">Module Launcher</h1>
+        <p class="text-white-50">Quickly navigate to any inventory module</p>
+    </div>
+
+    <div class="cards-grid">
+        <a *ngFor="let menu of menuItems" 
+             class="menu-card glass-card-hover text-decoration-none" 
+             [routerLink]="menu.path"
+             [@zoomInOnEnter]>
+            <div class="icon-circle mb-3">
+                <i [class]="menu.icon"></i>
+            </div>
+            <h3>{{ 'DASHBOARD.' + menu.name.toUpperCase() | translate }}</h3>
+            <p class="text-white-50 small">Access {{ menu.name }} module</p>
+        </a>
+    </div>
+</div>

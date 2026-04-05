@@ -1,0 +1,97 @@
+
+<app-page-shell [title]="'System Audit Logs'" [subtitle]="'Track all system activities and changes'" [@fadeInUpOnEnter]>
+    <div class="logs-container">
+        <!-- Filter Bar -->
+        <div class="d-flex justify-content-between align-items-center mb-4 p-3 glass-panel">
+            <div class="search-box w-25">
+                <input type="text" class="form-control glass-input rounded-pill px-4" 
+                       placeholder="Search logs..." [(ngModel)]="searchText" (input)="applyFilter()">
+            </div>
+            <div class="d-flex gap-3 align-items-center">
+                <select class="form-select glass-input rounded-pill px-3" [(ngModel)]="selectedModule" (change)="applyFilter()">
+                    <option value="All">All Modules</option>
+                    <option value="Sales">Sales</option>
+                    <option value="Purchases">Purchases</option>
+                    <option value="Inventory">Inventory</option>
+                    <option value="Customers">Customers</option>
+                    <option value="Vendors">Vendors</option>
+                    <option value="Auth">Auth</option>
+                </select>
+                <button class="btn btn-outline-light rounded-pill px-3 border-0" (click)="clearLogs()">
+                    <i class="fas fa-trash-alt me-2"></i> Clear
+                </button>
+                <button class="btn btn-primary rounded-pill px-4 shadow-lg" (click)="exportLogs()">
+                    <i class="fas fa-file-export me-2"></i> Export CSV
+                </button>
+            </div>
+        </div>
+
+        <!-- Table Section -->
+        <div class="glass-panel overflow-hidden rounded-4">
+            <table mat-table [dataSource]="dataSource" matSort>
+                <!-- Index Column -->
+                <ng-container matColumnDef="index">
+                    <th mat-header-cell *matHeaderCellDef> # </th>
+                    <td mat-cell *matCellDef="let row; let i = index"> {{ (paginator.pageIndex * paginator.pageSize) + i + 1 }} </td>
+                </ng-container>
+
+                <!-- Timestamp -->
+                <ng-container matColumnDef="timestamp">
+                    <th mat-header-cell *matHeaderCellDef mat-sort-header> Date & Time </th>
+                    <td mat-cell *matCellDef="let row" class="text-white-50"> {{ row.timestamp | date:'medium' }} </td>
+                </ng-container>
+
+                <!-- User -->
+                <ng-container matColumnDef="user">
+                    <th mat-header-cell *matHeaderCellDef mat-sort-header> User </th>
+                    <td mat-cell *matCellDef="let row"> 
+                        <span class="user-badge px-3 py-1 rounded-pill">
+                            <i class="fas fa-user-circle me-1 opacity-50"></i> {{ row.user }}
+                        </span>
+                    </td>
+                </ng-container>
+
+                <!-- Action -->
+                <ng-container matColumnDef="action">
+                    <th mat-header-cell *matHeaderCellDef mat-sort-header> Action </th>
+                    <td mat-cell *matCellDef="let row" class="fw-bold"> {{ row.action }} </td>
+                </ng-container>
+
+                <!-- Module -->
+                <ng-container matColumnDef="module">
+                    <th mat-header-cell *matHeaderCellDef mat-sort-header> Module </th>
+                    <td mat-cell *matCellDef="let row">
+                        <span class="module-chip px-3 py-1 rounded-pill" [class]="row.module.toLowerCase()">
+                            {{ row.module }}
+                        </span>
+                    </td>
+                </ng-container>
+
+                <!-- Details -->
+                <ng-container matColumnDef="details">
+                    <th mat-header-cell *matHeaderCellDef> Details </th>
+                    <td mat-cell *matCellDef="let row" class="text-white-70 details-cell"> {{ row.details }} </td>
+                </ng-container>
+
+                <!-- Severity -->
+                <ng-container matColumnDef="severity">
+                    <th mat-header-cell *matHeaderCellDef mat-sort-header> Status </th>
+                    <td mat-cell *matCellDef="let row">
+                        <span class="indicator px-2 py-1 rounded-3" [class]="row.severity">
+                            <i class="fas" [class]="row.severity === 'info' ? 'fa-info-circle' : row.severity === 'warning' ? 'fa-exclamation-triangle' : 'fa-times-circle'"></i>
+                        </span>
+                    </td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+
+                <tr class="mat-row" *matNoDataRow>
+                    <td class="mat-cell text-center py-5 opacity-50 fs-5" colspan="7">No matching audit logs found.</td>
+                </tr>
+            </table>
+
+            <mat-paginator [pageSizeOptions]="[10, 25, 50, 100]" aria-label="Select page of logs"></mat-paginator>
+        </div>
+    </div>
+</app-page-shell>

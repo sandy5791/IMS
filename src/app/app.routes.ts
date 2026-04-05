@@ -1,34 +1,37 @@
-import {  Routes } from '@angular/router';
-import { LoginComponent } from './Login/login/login.component';
-import { DashboardComponent } from './dashboard/dashboard.component';
+import { Routes } from '@angular/router';
 import { authGuard } from './services/auth.guard';
-import { PageNotFoundComponent } from './page-not-found/page-not-found.component';
-import { SalesOrderComponent } from './project/sales-order/sales-order.component';
-import { PurchaseOrderComponent } from './project/purchase-order/purchase-order.component';
-import { InventoryComponent } from './project/inventory/inventory.component';
-import { ReportComponent } from './project/report/report.component';
-import { AdminLoginComponent } from './Login/admin-login/admin-login.component';
+import { canDeactivateGuard } from './services/can-deactivate.guard';
+
 export const routes: Routes = [
     {
       path: 'dashboard',
       loadComponent: () => import('./dashboard/dashboard.component').then(m => m.DashboardComponent),
-      canActivate:[authGuard],
-      canActivateChild:[authGuard],
+      canActivate: [authGuard],
+      canActivateChild: [authGuard],
       children: [
-        { path: 'sales', component: SalesOrderComponent },
-        { path: 'purchases', component: PurchaseOrderComponent },
-        { path: 'reports', component: ReportComponent },
-        { path: 'inventory', component: InventoryComponent },
+        { path: '', loadComponent: () => import('./dashboard/dashboard-home/dashboard-home.component').then(m => m.DashboardHomeComponent) },
+        { path: 'menus', loadComponent: () => import('./dashboard/dashboard-menus/dashboard-menus.component').then(m => m.DashboardMenusComponent) },
+        { path: 'sales', loadComponent: () => import('./project/sales-order/sales-order.component').then(m => m.SalesOrderComponent), canDeactivate: [canDeactivateGuard] },
+        { path: 'purchases', loadComponent: () => import('./project/purchase-order/purchase-order.component').then(m => m.PurchaseOrderComponent), canDeactivate: [canDeactivateGuard] },
+        { path: 'reports', loadComponent: () => import('./project/report/report.component').then(m => m.ReportComponent) },
+        { path: 'inventory', loadComponent: () => import('./project/inventory/inventory.component').then(m => m.InventoryComponent) },
+        { path: 'customers', loadComponent: () => import('./project/customers/customers.component').then(m => m.CustomersComponent) },
+        { path: 'vendors', loadComponent: () => import('./project/vendors/vendors.component').then(m => m.VendorsComponent) },
+        { path: 'logs', loadComponent: () => import('./project/logs/logs.component').then(m => m.LogsComponent) },
+        { path: 'portal', loadComponent: () => import('./project/portal/portal.component').then(m => m.PortalComponent) },
       ]
     },
     {
       path: 'login',
-      loadComponent: () => import('./Login/login/login.component').then(m => m.LoginComponent)
+      loadComponent: () => import('./auth/login/login.component').then(m => m.LoginComponent)
     },
     {
       path: 'admin',
-      loadComponent: () => import('./Login/admin-login/admin-login.component').then(m => m.AdminLoginComponent)
+      loadComponent: () => import('./auth/admin-login/admin-login.component').then(m => m.AdminLoginComponent)
     },
     { path: '', redirectTo: 'login', pathMatch: 'full' },
-    { path: '**', redirectTo: 'login' }
+    {
+      path: '**',
+      loadComponent: () => import('./page-not-found/page-not-found.component').then(m => m.PageNotFoundComponent)
+    }
   ];

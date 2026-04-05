@@ -1,97 +1,139 @@
-<head>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
-</head>
-
 <div class="dashboard-container" [ngClass]="{ 'collapsed-sidebar': isSidebarCollapsed }">
-    <!-- Header Section -->
-    <header class="dashboard-header">
-        <button class="hamburger-btn" (click)="toggleSidebar()">
-            <i class="fas fa-bars"></i>
+    
+    <header class="dashboard-header glass-panel px-3">
+        <button class="hamburger-btn btn btn-link p-0 text-white" type="button" aria-label="Toggle sidebar" (click)="toggleSidebar()">
+            <i class="fas fa-bars fa-fade" style="--fa-animation-duration: 2s;"></i>
         </button>
         
-        <div class="logo">
-            <i class="fa-solid fa-industry"></i>
-            <Span>Inventory Managment</Span>
+        <div class="logo d-flex align-items-center gap-2">
+            <i class="fas fa-cube text-primary"></i>
+            <span class="brand-text">{{ 'DASHBOARD.BRAND' | translate }}</span>
         </div>
 
-        <div class="user-controls">
-            <div id="users" class="user-dropdown" (click)="toggleDropdown()">
-                <i id="users" class="fas fa-user-circle user-icon"></i>
-                <span id="users" class="username">{{ LogedInUser }}</span>
-                <div class="dropdown-menu" [ngClass]="{ 'show': isDropdownOpen }">
-                    <a (click)="logout()" class="dropdown-item">
-                        <i class="fas fa-sign-out-alt"></i> Logout
-                    </a>
-                    <a href="/profile" class="dropdown-item">
-                        <i class="fas fa-user"></i> Profile
-                    </a>
-                    <a href="/settings" class="dropdown-item">
-                        <i class="fas fa-cogs"></i> Settings
-                    </a>
+        <div class="global-search-container ms-4 flex-grow-1" style="max-width: 420px; position: relative;">
+            <div class="search-input-wrapper">
+                <i class="fas fa-search search-icon"></i>
+                <input id="global-search" type="text" class="search-input" 
+                       [(ngModel)]="searchQuery" 
+                       (input)="filterSuggestions()" 
+                       (focus)="onSearchFocus()"
+                       placeholder="Search screens, reports, or logs..." 
+                       autocomplete="off" />
+                <div class="search-shortcut">⌘K</div>
+            </div>
+            
+            <div class="glass-suggestions-panel shadow-lg" *ngIf="showSuggestions" id="suggestions-list">
+                <div class="suggestion-header" *ngIf="!searchQuery">Quick Access</div>
+                <div class="suggestion-header" *ngIf="searchQuery">Search Results</div>
+                
+                <ul class="suggestion-list">
+                    <li *ngFor="let suggestion of filteredSuggestions" (mousedown)="navigateTo(suggestion.path)" class="suggestion-item">
+                        <div class="item-icon">
+                            <i [class]="suggestion.icon"></i>
+                        </div>
+                        <div class="item-info">
+                            <span class="item-name">{{ suggestion.name }}</span>
+                            <span class="item-path">Navigate to {{ suggestion.name }} screen</span>
+                        </div>
+                        <i class="fas fa-chevron-right enter-icon"></i>
+                    </li>
+                </ul>
+                
+                <div class="suggestion-footer" *ngIf="filteredSuggestions.length === 0 && searchQuery">
+                    No results found for "{{ searchQuery }}"
                 </div>
             </div>
         </div>
 
+        <div class="user-controls d-flex align-items-center gap-3">
+            <select class="glass-inline-input text-white" style="width: auto; padding: 0.2rem 1.8rem 0.2rem 0.5rem; font-size: 0.8rem; background: rgba(0,0,0,0.2) !important;" (change)="switchLanguage($any($event.target).value)" [value]="currentLanguage">
+                <option value="en" class="text-dark">EN</option>
+                <option value="hi" class="text-dark">HI</option>
+            </select>
+            <button class="btn btn-link p-0" (click)="toggleTheme()" type="button" aria-label="Toggle theme">
+                <i class="fas fs-5 fa-shake" style="--fa-animation-iteration-count: 1;" [ngClass]="isLightTheme ? 'fa-sun text-warning' : 'fa-moon text-white'"></i>
+            </button>
+            <button class="user-dropdown btn btn-link text-decoration-none p-0" type="button" aria-label="User menu" (click)="toggleDropdown()">
+                <i class="fas fa-user-circle user-icon text-primary"></i>
+                <span class="username text-white">{{ loggedInUser }}</span>
+                <div class="glass-dropdown show" *ngIf="isDropdownOpen" [@fadeInOnEnter]>
+                    <button type="button" (click)="logout()" class="dropdown-item">
+                        <i class="fas fa-sign-out-alt"></i> {{ 'DASHBOARD.LOGOUT' | translate }}
+                    </button>
+                    <button type="button" class="dropdown-item" disabled>
+                        <i class="fas fa-user"></i> {{ 'DASHBOARD.PROFILE' | translate }}
+                    </button>
+                    <button type="button" class="dropdown-item" disabled>
+                        <i class="fas fa-cogs"></i> {{ 'DASHBOARD.SETTINGS' | translate }}
+                    </button>
+                </div>
+            </button>
+        </div>
     </header>
 
-    <!-- Sidebar Section -->
-    <aside class="dashboard-sidebar" [ngClass]="{ 'collapsed': isSidebarCollapsed }">
-        <nav>
-           
+    <aside class="dashboard-sidebar glass-panel" [@slideInLeftOnEnter] [ngClass]="{ 'collapsed': isSidebarCollapsed }">
+        <nav class="mt-2">
             <ul class="sidebar-menu">
-                
-                <li (click)="setActive('Home'); collapseSidebar()">
-                    <a routerLink="/dashboard" [ngClass]="{ active: activeLink === 'Home' }">
-                        <i class="fas fa-home" ></i> <span>Home</span>
+                <li (click)="setActive('/dashboard'); collapseSidebar()">
+                    <a routerLink="/dashboard" [ngClass]="{ active: activeLink === '/dashboard' }">
+                        <i class="fas fa-chart-pie"></i>
+                        <span>{{ 'DASHBOARD.HOME' | translate }}</span>
+                    </a>
+                </li>
+                <li (click)="setActive('/dashboard/menus'); collapseSidebar()">
+                    <a routerLink="/dashboard/menus" [ngClass]="{ active: activeLink === '/dashboard/menus' }">
+                        <i class="fas fa-th-large"></i>
+                        <span>{{ 'DASHBOARD.MENUS' | translate }}</span>
                     </a>
                 </li>
                 
-                <li (click)="setActive('sales'); collapseSidebar()">
-                    <a routerLink="/dashboard/sales" [ngClass]="{ active: activeLink === 'sales' }">
-                        <i class="fas fa-chart-line"></i> <span>Sales</span>
+                <li (click)="setActive('/dashboard/sales'); collapseSidebar()">
+                    <a routerLink="/dashboard/sales" [ngClass]="{ active: activeLink === '/dashboard/sales' }">
+                        <i class="fas fa-chart-line"></i>
+                        <span>{{ 'DASHBOARD.SALES' | translate }}</span>
                     </a>
                 </li>
-                <li (click)="setActive('purchases'); collapseSidebar()">
-                    <a routerLink="/dashboard/purchases" [ngClass]="{ active: activeLink === 'purchases' }">
-                        <i class="fas fa-box"></i> <span>Purchases</span>
+                <li (click)="setActive('/dashboard/purchases'); collapseSidebar()">
+                    <a routerLink="/dashboard/purchases" [ngClass]="{ active: activeLink === '/dashboard/purchases' }">
+                        <i class="fas fa-box"></i>
+                        <span>{{ 'DASHBOARD.PURCHASES' | translate }}</span>
                     </a>
                 </li>
-                <li (click)="setActive('reports'); collapseSidebar()">
-                    <a routerLink="/dashboard/reports" [ngClass]="{ active: activeLink === 'reports' }">
-                        <i class="fas fa-file-alt"></i> <span>Reports</span>
+                <li (click)="setActive('/dashboard/reports'); collapseSidebar()">
+                    <a routerLink="/dashboard/reports" [ngClass]="{ active: activeLink === '/dashboard/reports' }">
+                        <i class="fas fa-file-alt"></i>
+                        <span>{{ 'DASHBOARD.REPORTS' | translate }}</span>
                     </a>
                 </li>
-                <li (click)="setActive('inventory'); collapseSidebar()">
-                    <a routerLink="/dashboard/inventory" [ngClass]="{ active: activeLink === 'inventory' }">
-                        <i class="fas fa-cogs"></i> <span>Inventory</span>
+                <li (click)="setActive('/dashboard/inventory'); collapseSidebar()">
+                    <a routerLink="/dashboard/inventory" [ngClass]="{ active: activeLink === '/dashboard/inventory' }">
+                        <i class="fas fa-cogs"></i>
+                        <span>{{ 'DASHBOARD.INVENTORY' | translate }}</span>
+                    </a>
+                </li>
+                <li (click)="setActive('/dashboard/customers'); collapseSidebar()">
+                    <a routerLink="/dashboard/customers" [ngClass]="{ active: activeLink === '/dashboard/customers' }">
+                        <i class="fas fa-users"></i>
+                        <span>{{ 'DASHBOARD.CUSTOMERS' | translate }}</span>
+                    </a>
+                </li>
+                <li (click)="setActive('/dashboard/vendors'); collapseSidebar()">
+                    <a routerLink="/dashboard/vendors" [ngClass]="{ active: activeLink === '/dashboard/vendors' }">
+                        <i class="fas fa-truck"></i>
+                        <span>{{ 'DASHBOARD.VENDORS' | translate }}</span>
+                    </a>
+                </li>
+                <li (click)="setActive('/dashboard/logs'); collapseSidebar()">
+                    <a routerLink="/dashboard/logs" [ngClass]="{ active: activeLink === '/dashboard/logs' }">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>{{ 'DASHBOARD.LOGS' | translate }}</span>
                     </a>
                 </li>
             </ul>
         </nav>
     </aside>
 
-    <!-- Main Content Section -->
     <main class="dashboard-content">
-        <div *ngIf="showSearch" class="search-container">
-            <div class="search-bar">
-                <i class="fas fa-search search-icon"></i>
-                <input id="search-box" type="text" [(ngModel)]="searchQuery" placeholder="Search for modules..."
-                    (input)="filterSuggestions()" />
-            </div>
-            <ul id="suggestions-list" class="suggestions-list" *ngIf="showSuggestions" [ngClass]="{ 'show': showSuggestions }">
-                <li *ngFor="let suggestion of filteredSuggestions" (click)="navigateTo(suggestion)">
-                    {{ suggestion.name }}
-                </li>
-            </ul>
-        </div>
-
-        <div *ngIf="showSearch" class="cards-container">
-            <div *ngFor="let menu of menuItems" class="card" (click)="navigateTo(menu)">
-                <i class="{{ menu.icon }}"></i>
-                <h3>{{ menu.name }}</h3>
-            </div>
-        </div>
         <router-outlet></router-outlet>
     </main>
 </div>
