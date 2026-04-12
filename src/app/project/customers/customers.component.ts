@@ -1,18 +1,18 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, inject, OnInit, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, inject, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatPaginatorModule, MatPaginator } from '@angular/material/paginator';
 import { MatSortModule, MatSort } from '@angular/material/sort';
 import { SelectionModel } from '@angular/cdk/collections';
+import { ToastrService } from 'ngx-toastr';
 import { fadeInUpOnEnter, slideInLeftOnEnter } from '@ngverse/motion/animatecss';
+import { finalize } from 'rxjs';
 
-import { Customer } from '../models/model';
 import { PageShellComponent } from '../../utilities/page-shell/page-shell.component';
-import { CoreDataService } from '../../services/core-data.service';
+import { ImsApiService, ApiCustomer } from '../../services/ims-api.service';
 import { ExportService } from '../../services/export.service';
 
 @Component({
@@ -30,43 +30,39 @@ import { ExportService } from '../../services/export.service';
   ],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class CustomersComponent implements OnInit {
+export class CustomersComponent implements OnInit, AfterViewInit {
   private readonly destroyRef = inject(DestroyRef);
 
   customerForm: FormGroup;
-  customersList: Customer[] = [];
+  customersList: ApiCustomer[] = [];
   searchText = '';
+  isLoading = false;
 
   displayedColumns: string[] = ['select', 'index', 'customerId', 'name', 'email', 'phone', 'address', 'loyaltyPoints'];
-  dataSource = new MatTableDataSource<Customer>(this.customersList);
-  selection = new SelectionModel<Customer>(true, []);
+  dataSource = new MatTableDataSource<ApiCustomer>([]);
+  selection = new SelectionModel<ApiCustomer>(true, []);
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
 
   constructor(
     private fb: FormBuilder,
-    private router: Router,
-    private coreData: CoreDataService,
+    private api: ImsApiService,
     private exportService: ExportService,
+    private toastr: ToastrService,
     private cdr: ChangeDetectorRef
   ) {
     this.customerForm = this.fb.group({
-      customerId: ['', Validators.required],
-      name: ['', Validators.required],
-      email: ['', [Validators.required, Validators.email]],
-      phone: ['', Validators.required],
-      address: ['', Validators.required],
+      name:          ['', Validators.required],
+      email:         ['', [Validators.required, Validators.email]],
+      phone:         ['', Validators.required],
+      address:       ['', Validators.required],
       loyaltyPoints: [0, Validators.min(0)]
     });
   }
 
   ngOnInit(): void {
-    this.coreData.customers$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(data => {
-      this.customersList = data;
-      this.refreshData();
-      this.cdr.markForCheck();
-    });
+    this.loadCustomers();
   }
 
   ngAfterViewInit(): void {
@@ -74,13 +70,23 @@ export class CustomersComponent implements OnInit {
     this.dataSource.sort = this.sort;
   }
 
-  trackByCustomerId(_index: number, item: Customer): string {
-    return item.customerId;
+  loadCustomers(search?: string): void {
+    this.isLoading = true;
+    this.api.getCustomers(1, 200, search)
+      .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => { this.isLoading = false; this.cdr.markForCheck(); }))
+      .subscribe({
+        next: result => {
+          this.customersList = result.items;
+          this.dataSource.data = result.items;
+          this.selection.clear();
+          this.cdr.markForCheck();
+        },
+        error: () => this.toastr.error('Failed to load customers.', 'Error')
+      });
   }
 
-  private refreshData(): void {
-    this.dataSource.data = this.customersList;
-    this.selection.clear();
+  trackByCustomerId(_index: number, item: ApiCustomer): string {
+    return item.customerId;
   }
 
   isAllSelected(): boolean {
@@ -100,16 +106,29 @@ export class CustomersComponent implements OnInit {
       this.customerForm.markAllAsTouched();
       return;
     }
-    const customer = new Customer(this.customerForm.value);
-    this.coreData.addCustomer(customer);
-    this.customerForm.reset();
+    this.api.createCustomer(this.customerForm.value)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.toastr.success('Customer created.', 'Success');
+          this.customerForm.reset({ loyaltyPoints: 0 });
+          this.loadCustomers();
+        },
+        error: () => this.toastr.error('Failed to create customer.', 'Error')
+      });
   }
 
   removeSelected(): void {
     const selected = this.selection.selected;
-    const remaining = this.customersList.filter(item => !selected.includes(item));
-    this.coreData.setCustomers(remaining);
-    this.selection.clear();
+    if (!selected.length) return;
+    const deletes = selected.map(c =>
+      this.api.deleteCustomer(c.customerId).pipe(takeUntilDestroyed(this.destroyRef))
+    );
+    let done = 0;
+    deletes.forEach(obs => obs.subscribe({
+      next: () => { done++; if (done === deletes.length) { this.toastr.success('Deleted.', 'Success'); this.loadCustomers(); } },
+      error: () => this.toastr.error('Failed to delete one or more customers.', 'Error')
+    }));
   }
 
   onSearchChange(): void {

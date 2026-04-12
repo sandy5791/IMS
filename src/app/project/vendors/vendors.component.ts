@@ -1,18 +1,18 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, inject, OnInit, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, inject, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatPaginatorModule, MatPaginator } from '@angular/material/paginator';
 import { MatSortModule, MatSort } from '@angular/material/sort';
 import { SelectionModel } from '@angular/cdk/collections';
+import { ToastrService } from 'ngx-toastr';
 import { fadeInUpOnEnter, slideInLeftOnEnter } from '@ngverse/motion/animatecss';
+import { finalize } from 'rxjs';
 
-import { Vendor } from '../models/model';
 import { PageShellComponent } from '../../utilities/page-shell/page-shell.component';
-import { CoreDataService } from '../../services/core-data.service';
+import { ImsApiService, ApiVendor } from '../../services/ims-api.service';
 import { ExportService } from '../../services/export.service';
 
 @Component({
@@ -30,43 +30,39 @@ import { ExportService } from '../../services/export.service';
   ],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class VendorsComponent implements OnInit {
+export class VendorsComponent implements OnInit, AfterViewInit {
   private readonly destroyRef = inject(DestroyRef);
 
   vendorForm: FormGroup;
-  vendorsList: Vendor[] = [];
+  vendorsList: ApiVendor[] = [];
   searchText = '';
+  isLoading = false;
 
   displayedColumns: string[] = ['select', 'index', 'vendorId', 'name', 'email', 'phone', 'address', 'rating'];
-  dataSource = new MatTableDataSource<Vendor>(this.vendorsList);
-  selection = new SelectionModel<Vendor>(true, []);
+  dataSource = new MatTableDataSource<ApiVendor>([]);
+  selection = new SelectionModel<ApiVendor>(true, []);
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
 
   constructor(
     private fb: FormBuilder,
-    private router: Router,
-    private coreData: CoreDataService,
+    private api: ImsApiService,
     private exportService: ExportService,
+    private toastr: ToastrService,
     private cdr: ChangeDetectorRef
   ) {
     this.vendorForm = this.fb.group({
-      vendorId: ['', Validators.required],
-      name: ['', Validators.required],
-      email: ['', [Validators.required, Validators.email]],
-      phone: ['', Validators.required],
+      name:    ['', Validators.required],
+      email:   ['', [Validators.required, Validators.email]],
+      phone:   ['', Validators.required],
       address: ['', Validators.required],
-      rating: [5, [Validators.min(0), Validators.max(5)]]
+      rating:  [5, [Validators.min(0), Validators.max(5)]]
     });
   }
 
   ngOnInit(): void {
-    this.coreData.vendors$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(data => {
-      this.vendorsList = data;
-      this.refreshData();
-      this.cdr.markForCheck();
-    });
+    this.loadVendors();
   }
 
   ngAfterViewInit(): void {
@@ -74,13 +70,23 @@ export class VendorsComponent implements OnInit {
     this.dataSource.sort = this.sort;
   }
 
-  trackByVendorId(_index: number, item: Vendor): string {
-    return item.vendorId;
+  loadVendors(search?: string): void {
+    this.isLoading = true;
+    this.api.getVendors(1, 200, search)
+      .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => { this.isLoading = false; this.cdr.markForCheck(); }))
+      .subscribe({
+        next: result => {
+          this.vendorsList = result.items;
+          this.dataSource.data = result.items;
+          this.selection.clear();
+          this.cdr.markForCheck();
+        },
+        error: () => this.toastr.error('Failed to load vendors.', 'Error')
+      });
   }
 
-  private refreshData(): void {
-    this.dataSource.data = this.vendorsList;
-    this.selection.clear();
+  trackByVendorId(_index: number, item: ApiVendor): string {
+    return item.vendorId;
   }
 
   isAllSelected(): boolean {
@@ -100,16 +106,28 @@ export class VendorsComponent implements OnInit {
       this.vendorForm.markAllAsTouched();
       return;
     }
-    const vendor = new Vendor(this.vendorForm.value);
-    this.coreData.addVendor(vendor);
-    this.vendorForm.reset();
+    this.api.createVendor(this.vendorForm.value)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.toastr.success('Vendor created.', 'Success');
+          this.vendorForm.reset({ rating: 5 });
+          this.loadVendors();
+        },
+        error: () => this.toastr.error('Failed to create vendor.', 'Error')
+      });
   }
 
   removeSelected(): void {
     const selected = this.selection.selected;
-    const remaining = this.vendorsList.filter(item => !selected.includes(item));
-    this.coreData.setVendors(remaining);
-    this.selection.clear();
+    if (!selected.length) return;
+    let done = 0;
+    selected.forEach(v => {
+      this.api.deleteVendor(v.vendorId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: () => { done++; if (done === selected.length) { this.toastr.success('Deleted.', 'Success'); this.loadVendors(); } },
+        error: () => this.toastr.error('Failed to delete one or more vendors.', 'Error')
+      });
+    });
   }
 
   onSearchChange(): void {

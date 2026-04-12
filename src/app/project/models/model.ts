@@ -1,10 +1,10 @@
 export class SaleDetails {
-    itemId: string = '';
-    itemName: string = '';
-    quantity: number = 1;
-    price: number = 1;
-    discount: number = 0;
-    total: number = 1;
+    itemId = '';
+    itemName = '';
+    quantity = 1;
+    price = 1;
+    discount = 0;
+    total = 1;
 
     constructor(init?: Partial<SaleDetails>) {
         Object.assign(this, init);
@@ -12,11 +12,11 @@ export class SaleDetails {
 }
 
 export class PurchaseOrderItem {
-    itemId: string = '';
-    itemName: string = '';
-    quantity: number = 1;
-    unitPrice: number = 0;
-    total: number = 0;
+    itemId = '';
+    itemName = '';
+    quantity = 1;
+    unitPrice = 0;
+    total = 0;
 
     constructor(init?: Partial<PurchaseOrderItem>) {
         Object.assign(this, init);
@@ -24,14 +24,14 @@ export class PurchaseOrderItem {
 }
 
 export class InventoryItem {
-    itemId: string = '';
-    itemName: string = '';
-    category: string = '';
-    stockQty: number = 0;
-    reorderLevel: number = 0;
-    location: string = '';
-    batchNumber: string = '';
-    expiryDate: string = '';
+    itemId = '';
+    itemName = '';
+    category = '';
+    stockQty = 0;
+    reorderLevel = 0;
+    location = '';
+    batchNumber = '';
+    expiryDate = '';
 
     constructor(init?: Partial<InventoryItem>) {
         Object.assign(this, init);
@@ -39,12 +39,12 @@ export class InventoryItem {
 }
 
 export class Customer {
-    customerId: string = '';
-    name: string = '';
-    email: string = '';
-    phone: string = '';
-    address: string = '';
-    loyaltyPoints: number = 0;
+    customerId = '';
+    name = '';
+    email = '';
+    phone = '';
+    address = '';
+    loyaltyPoints = 0;
 
     constructor(init?: Partial<Customer>) {
         Object.assign(this, init);
@@ -52,12 +52,12 @@ export class Customer {
 }
 
 export class Vendor {
-    vendorId: string = '';
-    name: string = '';
-    email: string = '';
-    phone: string = '';
-    address: string = '';
-    rating: number = 0;
+    vendorId = '';
+    name = '';
+    email = '';
+    phone = '';
+    address = '';
+    rating = 0;
 
     constructor(init?: Partial<Vendor>) {
         Object.assign(this, init);

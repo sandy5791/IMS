@@ -68,17 +68,14 @@ export class LoginComponent implements OnInit {
     this.isLoading = true;
     this.authService.login(this.loginForm.value).pipe(
       catchError((err) => {
-        this.toast.error('Login failed: ' + err, 'Error');
+        const msg = err?.error?.message || 'Login failed. Check your credentials.';
+        this.toast.error(msg, 'Error');
         this.isLoading = false;
         return of(null);
       })
     ).subscribe((res) => {
       if (!res) return;
-
-      this.authService.setAuthToken(res.token);
       this.toast.success('Login successful', 'Success');
-      this.storage.setItem('LoggedInUser', this.loginForm.value.username);
-
       this.loginSuccess = true;
       setTimeout(() => this.router.navigate(['/dashboard']), 900);
     });

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, inject, OnInit, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, inject, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -22,7 +22,7 @@ import { StorageService } from '../../services/storage.service';
   ],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class PortalComponent implements OnInit {
+export class PortalComponent implements OnInit, AfterViewInit {
   private readonly destroyRef = inject(DestroyRef);
 
   userName: string;

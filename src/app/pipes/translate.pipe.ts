@@ -8,8 +8,8 @@ import { Subscription } from 'rxjs';
   pure: false // Impure to automatically trigger CD on language change
 })
 export class TranslatePipe implements PipeTransform, OnDestroy {
-  private value: string = '';
-  private lastKey: string = '';
+  private value = '';
+  private lastKey = '';
   private subscription!: Subscription;
 
   constructor(private translationService: TranslationService, private ref: ChangeDetectorRef) {

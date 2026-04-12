@@ -1,18 +1,18 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, inject, OnInit, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, inject, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatPaginatorModule, MatPaginator } from '@angular/material/paginator';
 import { MatSortModule, MatSort } from '@angular/material/sort';
 import { SelectionModel } from '@angular/cdk/collections';
+import { ToastrService } from 'ngx-toastr';
 import { fadeInUpOnEnter, slideInLeftOnEnter } from '@ngverse/motion/animatecss';
+import { finalize } from 'rxjs';
 
-import { InventoryItem } from '../models/model';
 import { PageShellComponent } from '../../utilities/page-shell/page-shell.component';
-import { CoreDataService } from '../../services/core-data.service';
+import { ImsApiService, ApiInventoryItem } from '../../services/ims-api.service';
 import { ExportService } from '../../services/export.service';
 
 @Component({
@@ -30,47 +30,44 @@ import { ExportService } from '../../services/export.service';
   ],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class InventoryComponent implements OnInit {
+export class InventoryComponent implements OnInit, AfterViewInit {
   private readonly destroyRef = inject(DestroyRef);
 
   inventoryForm: FormGroup;
-  inventoryItems: InventoryItem[] = [];
+  inventoryItems: ApiInventoryItem[] = [];
   lowStockCount = 0;
   nearExpiryCount = 0;
   searchText = '';
+  isLoading = false;
 
   displayedColumns: string[] = ['select', 'index', 'itemId', 'itemName', 'category', 'stockQty', 'reorderLevel', 'batchNumber', 'expiryDate', 'location', 'actions'];
-  dataSource = new MatTableDataSource<InventoryItem>(this.inventoryItems);
-  selection = new SelectionModel<InventoryItem>(true, []);
+  dataSource = new MatTableDataSource<ApiInventoryItem>([]);
+  selection = new SelectionModel<ApiInventoryItem>(true, []);
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
 
   constructor(
     private fb: FormBuilder,
-    private router: Router,
-    private coreData: CoreDataService,
+    private api: ImsApiService,
     private exportService: ExportService,
+    private toastr: ToastrService,
     private cdr: ChangeDetectorRef
   ) {
     this.inventoryForm = this.fb.group({
-      itemId: ['', Validators.required],
-      itemName: ['', Validators.required],
-      category: ['', Validators.required],
-      stockQty: [0, Validators.required],
+      itemName:     ['', Validators.required],
+      category:     ['', Validators.required],
+      stockQty:     [0, Validators.required],
       reorderLevel: [0, Validators.required],
-      location: ['', Validators.required],
-      batchNumber: [''],
-      expiryDate: ['']
+      location:     ['', Validators.required],
+      batchNumber:  [''],
+      expiryDate:   [''],
+      unitPrice:    [0]
     });
   }
 
   ngOnInit(): void {
-    this.coreData.inventory$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(data => {
-      this.inventoryItems = data;
-      this.refreshData();
-      this.cdr.markForCheck();
-    });
+    this.loadInventory();
   }
 
   ngAfterViewInit(): void {
@@ -78,15 +75,25 @@ export class InventoryComponent implements OnInit {
     this.dataSource.sort = this.sort;
   }
 
-  trackByItemId(_index: number, item: InventoryItem): string {
-    return item.itemId;
+  loadInventory(search?: string): void {
+    this.isLoading = true;
+    this.api.getInventory(1, 200, search)
+      .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => { this.isLoading = false; this.cdr.markForCheck(); }))
+      .subscribe({
+        next: result => {
+          this.inventoryItems = result.items;
+          this.dataSource.data = result.items;
+          this.lowStockCount = result.items.filter(i => i.stockQty <= i.reorderLevel).length;
+          this.nearExpiryCount = result.items.filter(i => i.expiryDate && this.isNearExpiry(i)).length;
+          this.selection.clear();
+          this.cdr.markForCheck();
+        },
+        error: () => this.toastr.error('Failed to load inventory.', 'Error')
+      });
   }
 
-  private refreshData(): void {
-    this.dataSource.data = this.inventoryItems;
-    this.lowStockCount = this.inventoryItems.filter(item => item.stockQty <= item.reorderLevel).length;
-    this.nearExpiryCount = this.inventoryItems.filter(item => item.expiryDate && this.isNearExpiry(item)).length;
-    this.selection.clear();
+  trackByItemId(_index: number, item: ApiInventoryItem): string {
+    return item.itemId;
   }
 
   isAllSelected(): boolean {
@@ -106,45 +113,55 @@ export class InventoryComponent implements OnInit {
       this.inventoryForm.markAllAsTouched();
       return;
     }
-    const item = new InventoryItem(this.inventoryForm.value);
-    this.coreData.addInventoryItem(item);
-    this.coreData.logAudit('Add Item', 'Inventory', `New item ${item.itemName} (${item.itemId}) added to stock.`, 'info');
-    this.inventoryForm.reset();
+    this.api.createInventoryItem(this.inventoryForm.value)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.toastr.success('Inventory item added.', 'Success');
+          this.inventoryForm.reset({ stockQty: 0, reorderLevel: 0, unitPrice: 0 });
+          this.loadInventory();
+        },
+        error: () => this.toastr.error('Failed to add item.', 'Error')
+      });
   }
 
-  manualAdjustment(item: InventoryItem, delta: number): void {
-    item.stockQty += delta;
-    if (item.stockQty < 0) item.stockQty = 0;
-    this.coreData.setInventory([...this.inventoryItems]);
-    this.coreData.logAudit('Stock Adjustment', 'Inventory', `Manual adjustment for ${item.itemName}: ${delta > 0 ? '+' : ''}${delta}. New Qty: ${item.stockQty}`, 'warning');
-  }
-
-  simulateScan(): void {
-    if (this.inventoryItems.length === 0) return;
-    const randomItem = this.inventoryItems[Math.floor(Math.random() * this.inventoryItems.length)];
-    this.manualAdjustment(randomItem, -1);
-    this.coreData.logAudit('Barcode Scan', 'Inventory', `Simulated scan for ${randomItem.itemName}. Stock deducted.`, 'info');
+  manualAdjustment(item: ApiInventoryItem, delta: number): void {
+    this.api.adjustStock(item.itemId, delta, delta > 0 ? 'Manual increase' : 'Manual decrease')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => { this.toastr.info(`Stock adjusted by ${delta}.`, 'Adjustment'); this.loadInventory(); },
+        error: () => this.toastr.error('Failed to adjust stock.', 'Error')
+      });
   }
 
   removeSelectedItems(): void {
     const selected = this.selection.selected;
-    const remaining = this.inventoryItems.filter(item => !selected.includes(item));
-    this.coreData.setInventory(remaining);
-  }
-
-  goBack(): void {
-    this.router.navigate(['/dashboard']);
+    if (!selected.length) return;
+    let done = 0;
+    selected.forEach(item => {
+      this.api.deleteInventoryItem(item.itemId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: () => { done++; if (done === selected.length) { this.toastr.success('Deleted.', 'Success'); this.loadInventory(); } },
+        error: () => this.toastr.error('Failed to delete items.', 'Error')
+      });
+    });
   }
 
   onSearchChange(): void {
     this.dataSource.filter = this.searchText.trim().toLowerCase();
   }
 
-  isLowStock(item: InventoryItem): boolean {
+  isLowStock(item: ApiInventoryItem): boolean {
     return item.stockQty <= item.reorderLevel;
   }
 
-  isNearExpiry(item: InventoryItem): boolean {
+  // Random stock scan simulation — picks a random item and deducts 1 unit
+  simulateScan(): void {
+    if (!this.inventoryItems.length) return;
+    const item = this.inventoryItems[Math.floor(Math.random() * this.inventoryItems.length)];
+    this.manualAdjustment(item, -1);
+  }
+
+  isNearExpiry(item: ApiInventoryItem): boolean {
     if (!item.expiryDate) return false;
     const expiry = new Date(item.expiryDate);
     const threeMonthsFromNow = new Date();
@@ -153,10 +170,11 @@ export class InventoryComponent implements OnInit {
   }
 
   exportToCsv(): void {
-    const headers = ['Item ID', 'Item Name', 'Category', 'Stock Qty', 'Reorder Level', 'Location'];
+    const headers = ['Item ID', 'Item Name', 'Category', 'Stock Qty', 'Reorder Level', 'Unit Price', 'Location'];
     const rows = this.inventoryItems.map(item => [
       item.itemId, item.itemName, item.category,
-      item.stockQty.toString(), item.reorderLevel.toString(), item.location
+      item.stockQty.toString(), item.reorderLevel.toString(),
+      item.unitPrice.toFixed(2), item.location
     ]);
     this.exportService.exportToCsv(headers, rows, 'inventory');
   }

@@ -5,9 +5,9 @@ import { RouterModule } from '@angular/router';
 import { fadeInUpOnEnter, zoomInOnEnter, slideInLeftOnEnter } from '@ngverse/motion/animatecss';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartOptions } from 'chart.js';
+import { forkJoin } from 'rxjs';
 
-import { CoreDataService, SalesRecord, PurchaseRecord } from '../../services/core-data.service';
-import { InventoryItem } from '../../project/models/model';
+import { ImsApiService, ApiSalesOrder, ApiPurchaseOrder, DashboardKpi } from '../../services/ims-api.service';
 
 @Component({
   selector: 'app-dashboard-home',
@@ -29,72 +29,78 @@ export class DashboardHomeComponent implements OnInit {
   totalPurchases = 0;
   totalInventoryValue = 0;
   lowStockItemsCount = 0;
-  recentSales: SalesRecord[] = [];
-  recentPurchases: PurchaseRecord[] = [];
+  totalCustomers = 0;
+  totalVendors = 0;
+  monthlyRevenue = 0;
+  recentSales: ApiSalesOrder[] = [];
+  recentPurchases: ApiPurchaseOrder[] = [];
+  isLoading = true;
 
   public lineChartData: ChartConfiguration<'line'>['data'] = {
     labels: [],
-    datasets: [
-      {
-        data: [],
-        label: 'Sales ($)',
-        fill: true,
-        tension: 0.5,
-        borderColor: '#6366f1',
-        backgroundColor: 'rgba(99, 102, 241, 0.2)'
-      }
-    ]
+    datasets: [{
+      data: [], label: 'Sales ($)', fill: true, tension: 0.5,
+      borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.2)'
+    }]
   };
   public lineChartOptions: ChartOptions<'line'> = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false }
-    },
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
     scales: {
       y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' } },
       x: { grid: { display: false } }
     }
   };
 
-  constructor(
-    private coreData: CoreDataService,
-    private cdr: ChangeDetectorRef
-  ) {}
+  constructor(private api: ImsApiService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
-    this.coreData.sales$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((sales: SalesRecord[]) => {
-      this.recentSales = sales.slice(-5).reverse();
-      this.totalSales = sales.reduce((sum: number, s: SalesRecord) => sum + s.totalAmount, 0);
-      this.updateSalesChart(sales);
-      this.cdr.markForCheck();
-    });
+    // Load dashboard KPI from the dedicated API endpoint
+    this.api.getDashboardKpi()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (kpi: DashboardKpi) => {
+          this.totalSales         = kpi.totalRevenue;
+          this.totalPurchases     = kpi.totalPurchaseOrders;
+          this.totalInventoryValue = kpi.totalInventoryItems;
+          this.lowStockItemsCount = kpi.lowStockCount;
+          this.totalCustomers     = kpi.totalCustomers;
+          this.totalVendors       = kpi.totalVendors;
+          this.monthlyRevenue     = kpi.monthlyRevenue;
+          this.cdr.markForCheck();
+        }
+      });
 
-    this.coreData.purchases$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((purchases: PurchaseRecord[]) => {
-      this.recentPurchases = purchases.slice(-5).reverse();
-      this.totalPurchases = purchases.reduce((sum: number, p: PurchaseRecord) => sum + p.totalAmount, 0);
-      this.cdr.markForCheck();
-    });
-
-    this.coreData.inventory$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((items: InventoryItem[]) => {
-      this.lowStockItemsCount = items.filter((i: InventoryItem) => i.stockQty <= i.reorderLevel).length;
-      this.totalInventoryValue = items.reduce((sum: number, i: InventoryItem) => sum + (i.stockQty * 50), 0);
-      this.cdr.markForCheck();
-    });
+    // Load recent orders for activity feed via forkJoin
+    forkJoin({
+      sales: this.api.getSalesOrders(1, 5),
+      purchases: this.api.getPurchaseOrders(1, 5)
+    }).pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: ({ sales, purchases }) => {
+          this.recentSales = sales.items;
+          this.recentPurchases = purchases.items;
+          this.isLoading = false;
+          this.updateSalesChart(sales.items);
+          this.cdr.markForCheck();
+        },
+        error: () => { this.isLoading = false; this.cdr.markForCheck(); }
+      });
   }
 
-  trackBySaleId(_index: number, item: SalesRecord): string {
-    return item.orderId;
+  trackBySaleId(_index: number, item: ApiSalesOrder): string {
+    return item.orderId ?? String(_index);
   }
 
-  trackByPurchaseId(_index: number, item: PurchaseRecord): string {
-    return item.orderId;
+  trackByPurchaseId(_index: number, item: ApiPurchaseOrder): string {
+    return item.orderId ?? String(_index);
   }
 
-  private updateSalesChart(sales: SalesRecord[]): void {
-    const labels = sales.map(s => s.date).slice(-7);
-    const data = sales.map(s => s.totalAmount).slice(-7);
-    this.lineChartData.labels = labels;
-    this.lineChartData.datasets[0].data = data;
+  private updateSalesChart(sales: ApiSalesOrder[]): void {
+    this.lineChartData = {
+      ...this.lineChartData,
+      labels: sales.map(s => s.orderDate),
+      datasets: [{ ...this.lineChartData.datasets[0], data: sales.map(s => s.totalAmount) }]
+    };
   }
 }

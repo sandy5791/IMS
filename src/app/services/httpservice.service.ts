@@ -15,7 +15,8 @@ export class HttpserviceService {
     private storage: StorageService
   ) {}
 
-  private readonly apiUrl = '';
+  // ─── API Base URL (update for production) ──────────────────
+  private readonly apiUrl = 'https://localhost:7210/api';
 
   private buildUrl(url: string): string {
     if (!url) {
@@ -29,29 +30,49 @@ export class HttpserviceService {
     return `${normalizedBase}${normalizedPath}`;
   }
 
-  public get(url: string, queryParams?: HttpParams): Observable<any> {
-    return this.http.get(this.buildUrl(url), { params: queryParams }).pipe(catchError((err) => this.errorHandler(err)));
+  /** Build Authorization header using stored JWT token. */
+  private getAuthHeaders(): Record<string, string> {
+    const token = this.storage.getItem<string>('authToken');
+    return token ? { Authorization: `Bearer ${token}` } : {};
   }
 
-  public post(url: string, data: any, queryParams?: HttpParams): Observable<any> {
-    return this.http.post(this.buildUrl(url), data, { params: queryParams }).pipe(catchError((err) => this.errorHandler(err)));
+  public get<T = any>(url: string, queryParams?: HttpParams): Observable<T> {
+    return this.http.get<T>(this.buildUrl(url), {
+      params: queryParams,
+      headers: this.getAuthHeaders()
+    }).pipe(catchError((err) => this.errorHandler(err)));
   }
 
-  public patch(url: string, data: any, queryParams?: HttpParams): Observable<any> {
-    return this.http.patch(this.buildUrl(url), data, { params: queryParams }).pipe(catchError((err) => this.errorHandler(err)));
+  public post<T = any>(url: string, data: any, queryParams?: HttpParams): Observable<T> {
+    return this.http.post<T>(this.buildUrl(url), data, {
+      params: queryParams,
+      headers: this.getAuthHeaders()
+    }).pipe(catchError((err) => this.errorHandler(err)));
   }
 
-  public put(url: string, data: any): Observable<any> {
-    return this.http.put(this.buildUrl(url), data).pipe(catchError((err) => this.errorHandler(err)));
+  public patch<T = any>(url: string, data: any, queryParams?: HttpParams): Observable<T> {
+    return this.http.patch<T>(this.buildUrl(url), data, {
+      params: queryParams,
+      headers: this.getAuthHeaders()
+    }).pipe(catchError((err) => this.errorHandler(err)));
   }
 
-  public delete(url: string, queryParams?: HttpParams): Observable<any> {
-    return this.http.delete(this.buildUrl(url), { params: queryParams }).pipe(catchError((err) => this.errorHandler(err)));
+  public put<T = any>(url: string, data: any): Observable<T> {
+    return this.http.put<T>(this.buildUrl(url), data, {
+      headers: this.getAuthHeaders()
+    }).pipe(catchError((err) => this.errorHandler(err)));
+  }
+
+  public delete<T = any>(url: string, queryParams?: HttpParams): Observable<T> {
+    return this.http.delete<T>(this.buildUrl(url), {
+      params: queryParams,
+      headers: this.getAuthHeaders()
+    }).pipe(catchError((err) => this.errorHandler(err)));
   }
 
   private errorHandler(err: HttpErrorResponse): Observable<never> {
     if (err instanceof HttpErrorResponse) {
-      if (err.status === 401 && err.statusText === 'Unauthorized') {
+      if (err.status === 401) {
         this.storage.removeItem('authToken');
         this.storage.removeItem('LoggedInUser');
         this.router.navigate(['/login']);

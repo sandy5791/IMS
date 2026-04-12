@@ -10,7 +10,7 @@ export class TranslationService {
   private currentLang: BehaviorSubject<string>;
   public currentLang$: Observable<string>;
 
-  private translations: { [key: string]: any } = {};
+  private translations: Record<string, any> = {};
   private translationsLoaded = new BehaviorSubject<boolean>(false);
 
   constructor(private http: HttpClient, private storage: StorageService) {
@@ -21,7 +21,7 @@ export class TranslationService {
   }
 
   use(lang: string): void {
-    this.http.get<{ [key: string]: any }>(`./assets/i18n/${lang}.json`).subscribe({
+    this.http.get<Record<string, any>>(`./assets/i18n/${lang}.json`).subscribe({
       next: (res) => {
         this.translations = res;
         this.currentLang.next(lang);

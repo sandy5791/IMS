@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, inject, OnInit, ViewChild, HostListener } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, inject, OnInit, ViewChild, AfterViewInit, HostListener } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -9,15 +9,15 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatPaginatorModule, MatPaginator } from '@angular/material/paginator';
 import { SelectionModel } from '@angular/cdk/collections';
 import { fadeInUpOnEnter, slideInLeftOnEnter } from '@ngverse/motion/animatecss';
+import { finalize } from 'rxjs';
 
-import { CoreDataService, PurchaseRecord } from '../../services/core-data.service';
+import { ImsApiService, ApiPurchaseOrder, ApiPurchaseItem, ApiVendor, ApiInventoryItem } from '../../services/ims-api.service';
 import { ExportService } from '../../services/export.service';
-import { Vendor, InventoryItem } from '../models/model';
 import { PageShellComponent } from '../../utilities/page-shell/page-shell.component';
 import { EntityLookupComponent } from '../../utilities/entity-lookup/entity-lookup.component';
 import { CanComponentDeactivate } from '../../services/can-deactivate.guard';
 
-interface PurchaseItem {
+interface PurchaseRow {
   itemId: string;
   itemName: string;
   quantity: number;
@@ -40,77 +40,67 @@ interface PurchaseItem {
   ],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class PurchaseOrderComponent implements OnInit, CanComponentDeactivate {
+export class PurchaseOrderComponent implements OnInit, CanComponentDeactivate, AfterViewInit {
   private readonly destroyRef = inject(DestroyRef);
 
   purchaseForm: FormGroup;
-  purchaseItems: PurchaseItem[] = [];
+  purchaseItems: PurchaseRow[] = [];
   searchText = '';
+  isLoading = false;
 
   displayedColumns: string[] = ['select', 'index', 'itemId', 'itemName', 'quantity', 'unitPrice', 'total'];
-  dataSource = new MatTableDataSource<PurchaseItem>(this.purchaseItems);
-  selection = new SelectionModel<PurchaseItem>(true, []);
+  dataSource = new MatTableDataSource<PurchaseRow>(this.purchaseItems);
+  selection = new SelectionModel<PurchaseRow>(true, []);
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild('vendorLookup') vendorLookup!: EntityLookupComponent;
 
-  vendors: Vendor[] = [];
-  inventory: InventoryItem[] = [];
+  vendors: ApiVendor[] = [];
+  inventory: ApiInventoryItem[] = [];
   selectedVendorId: string | null = null;
+  existingOrders: ApiPurchaseOrder[] = [];
 
   constructor(
     private fb: FormBuilder,
     private router: Router,
     private toastr: ToastrService,
-    private coreData: CoreDataService,
+    private api: ImsApiService,
     private exportService: ExportService,
     private cdr: ChangeDetectorRef
   ) {
     this.purchaseForm = this.fb.group({
-      vendor: ['', Validators.required],
-      poNumber: ['', [Validators.required]],
-      orderDate: [new Date().toISOString().slice(0, 10)],
+      vendor:           ['', Validators.required],
+      poNumber:         ['', [Validators.required]],
+      orderDate:        [new Date().toISOString().slice(0, 10)],
       expectedDelivery: [''],
-      status: ['Pending'],
-      remarks: [''],
-      paymentMode: ['Cash'],
+      status:           ['Pending'],
+      remarks:          [''],
+      paymentMode:      ['Cash'],
     });
   }
 
   ngOnInit(): void {
-    this.coreData.vendors$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(data => {
-      this.vendors = data;
-      this.cdr.markForCheck();
+    this.api.getVendors(1, 500).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: r => { this.vendors = r.items; this.cdr.markForCheck(); }
     });
-    this.coreData.inventory$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(data => {
-      this.inventory = data;
-      this.cdr.markForCheck();
+    this.api.getInventory(1, 500).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: r => { this.inventory = r.items; this.cdr.markForCheck(); }
+    });
+    this.api.getPurchaseOrders(1, 50).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: r => { this.existingOrders = r.items; this.cdr.markForCheck(); }
     });
 
-    this.purchaseItems = [
-      { itemId: 'I-001', itemName: 'Widget A', quantity: 5, unitPrice: 10, total: 50 },
-      { itemId: 'I-003', itemName: 'Sensor Module X', quantity: 10, unitPrice: 20, total: 200 },
-      { itemId: 'I-004', itemName: 'Titanium Bolt 10mm', quantity: 100, unitPrice: 2, total: 200 },
-      { itemId: 'I-006', itemName: 'Power Supply 500W', quantity: 5, unitPrice: 80, total: 400 },
-      { itemId: 'I-007', itemName: 'Cooling Fan 120mm', quantity: 20, unitPrice: 8, total: 160 },
-      { itemId: 'I-010', itemName: 'Copper Wire 100m', quantity: 15, unitPrice: 25, total: 375 },
-      { itemId: 'I-012', itemName: 'Silicon Sealant', quantity: 8, unitPrice: 12, total: 96 },
-      { itemId: 'I-014', itemName: 'Thermal Paste', quantity: 12, unitPrice: 5, total: 60 },
-      { itemId: 'I-002', itemName: 'Component B', quantity: 25, unitPrice: 15, total: 375 },
-      { itemId: 'I-009', itemName: 'Logic Controller', quantity: 2, unitPrice: 150, total: 300 }
-    ];
+    this.purchaseItems = [{ itemId: '', itemName: '', quantity: 1, unitPrice: 0, total: 0 }];
     this.updateRowData();
   }
 
   @HostListener('window:beforeunload', ['$event'])
   unloadNotification($event: BeforeUnloadEvent): void {
-    if (!this.canDeactivate()) {
-      $event.preventDefault();
-    }
+    if (this.purchaseForm.dirty) { $event.preventDefault(); }
   }
 
   canDeactivate(): boolean {
-    if (this.purchaseForm.dirty || this.purchaseItems.length > 0) {
+    if (this.purchaseForm.dirty) {
       return confirm('You have unsaved changes in your Purchase Order. Do you want to leave?');
     }
     return true;
@@ -120,8 +110,8 @@ export class PurchaseOrderComponent implements OnInit, CanComponentDeactivate {
     this.dataSource.paginator = this.paginator;
   }
 
-  trackByItemId(_index: number, item: PurchaseItem): string {
-    return item.itemId;
+  trackByItemId(_index: number, item: PurchaseRow): string {
+    return item.itemId || String(_index);
   }
 
   updateRowData(): void {
@@ -135,48 +125,36 @@ export class PurchaseOrderComponent implements OnInit, CanComponentDeactivate {
     this.cdr.markForCheck();
   }
 
-  onSearchChange(): void {
-    this.updateRowData();
-  }
+  onSearchChange(): void { this.updateRowData(); }
 
   isAllSelected(): boolean {
     return this.selection.selected.length === this.dataSource.data.length && this.dataSource.data.length > 0;
   }
 
   toggleAllRows(): void {
-    if (this.isAllSelected()) {
-      this.selection.clear();
-    } else {
-      this.dataSource.data.forEach(row => this.selection.select(row));
-    }
+    if (this.isAllSelected()) { this.selection.clear(); }
+    else { this.dataSource.data.forEach(row => this.selection.select(row)); }
   }
 
   addRow(): void {
-    this.purchaseItems.push({ itemId: '', itemName: 'New Item', quantity: 1, unitPrice: 0, total: 0 });
+    this.purchaseItems.push({ itemId: '', itemName: '', quantity: 1, unitPrice: 0, total: 0 });
     this.updateRowData();
   }
 
-  onItemSelect(item: PurchaseItem, itemId: string): void {
-    const invItem = this.inventory.find(i => i.itemId === itemId);
-    if (invItem) {
-      item.itemId = invItem.itemId;
-      item.itemName = invItem.itemName;
-      item.unitPrice = 10;
-    }
+  onItemSelect(item: PurchaseRow, itemId: string): void {
+    const inv = this.inventory.find(i => i.itemId === itemId);
+    if (inv) { item.itemId = inv.itemId; item.itemName = inv.itemName; item.unitPrice = inv.unitPrice; }
   }
 
   removeSelectedRows(): void {
-    const selected = this.selection.selected;
-    if (!selected.length) { return; }
-    this.purchaseItems = this.purchaseItems.filter(item => !selected.includes(item));
+    if (!this.selection.selected.length) return;
+    this.purchaseItems = this.purchaseItems.filter(item => !this.selection.selected.includes(item));
     this.updateRowData();
   }
 
-  hasSelectedRows(): boolean {
-    return this.selection.selected.length > 0;
-  }
+  hasSelectedRows(): boolean { return this.selection.selected.length > 0; }
 
-  computeItemTotal(item: PurchaseItem): number {
+  computeItemTotal(item: PurchaseRow): number {
     return Number((item.quantity * item.unitPrice).toFixed(2));
   }
 
@@ -185,27 +163,20 @@ export class PurchaseOrderComponent implements OnInit, CanComponentDeactivate {
   }
 
   onVendorBlur(): void {
-    const enteredVendor = this.purchaseForm.value.vendor;
-    if (!enteredVendor) return;
-
-    const vendorMatch = this.vendors.find(v =>
-      v.name.toLowerCase() === enteredVendor.toLowerCase() ||
-      v.vendorId.toLowerCase() === enteredVendor.toLowerCase()
+    const entered = this.purchaseForm.value.vendor;
+    if (!entered) return;
+    const match = this.vendors.find(v =>
+      v.name.toLowerCase() === entered.toLowerCase() || v.vendorId.toLowerCase() === entered.toLowerCase()
     );
-
-    if (vendorMatch) {
-      this.purchaseForm.patchValue({ vendor: vendorMatch.name });
-      this.selectedVendorId = vendorMatch.vendorId;
-    } else {
-      this.selectedVendorId = null;
-    }
+    if (match) {
+      this.purchaseForm.patchValue({ vendor: match.name });
+      this.selectedVendorId = match.vendorId;
+    } else { this.selectedVendorId = null; }
   }
 
-  openVendorModal(): void {
-    this.vendorLookup.open();
-  }
+  openVendorModal(): void { this.vendorLookup.open(); }
 
-  selectModalVendor(v: any): void {
+  selectModalVendor(v: ApiVendor): void {
     this.purchaseForm.patchValue({ vendor: v.name });
     this.selectedVendorId = v.vendorId;
   }
@@ -216,45 +187,48 @@ export class PurchaseOrderComponent implements OnInit, CanComponentDeactivate {
       this.toastr.error('Please fill in all required fields.', 'Validation Error');
       return;
     }
-
-    let vendorIdToUse = this.selectedVendorId;
-    const vendorNameToUse = this.purchaseForm.value.vendor;
-
-    if (!vendorIdToUse) {
-      const newVendor = new Vendor({
-        vendorId: 'VND-' + Math.floor(Math.random() * 90000 + 10000),
-        name: vendorNameToUse,
-        email: 'N/A',
-        phone: 'N/A',
-        address: 'Added from PO',
-        rating: 5
-      });
-      this.coreData.addVendor(newVendor);
-      vendorIdToUse = newVendor.vendorId;
+    const validItems = this.purchaseItems.filter(i => i.itemId);
+    if (!validItems.length) {
+      this.toastr.error('Please add at least one item.', 'Validation Error');
+      return;
     }
 
-    const orderRecord: PurchaseRecord = {
-      orderId: 'PO-' + Math.floor(Math.random() * 1000000),
-      vendorId: vendorIdToUse,
-      vendorName: vendorNameToUse,
-      date: this.purchaseForm.value.orderDate,
+    const items: ApiPurchaseItem[] = validItems.map(i => ({
+      itemId: i.itemId, itemName: i.itemName,
+      quantity: i.quantity, unitPrice: i.unitPrice,
+      total: this.computeItemTotal(i)
+    }));
+
+    const order: ApiPurchaseOrder = {
+      vendorId:    this.selectedVendorId || '',
+      vendorName:  this.purchaseForm.value.vendor,
+      orderDate:   this.purchaseForm.value.orderDate,
+      paymentMode: this.purchaseForm.value.paymentMode,
+      remarks:     this.purchaseForm.value.remarks || '',
       totalAmount: this.grandTotal,
-      items: this.purchaseItems
+      items
     };
 
-    this.coreData.processPurchase(orderRecord);
-    this.toastr.success('Purchase order created successfully. Inventory increased.', 'Success');
-    this.resetForm();
+    this.isLoading = true;
+    this.api.createPurchaseOrder(order)
+      .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => { this.isLoading = false; this.cdr.markForCheck(); }))
+      .subscribe({
+        next: () => {
+          this.toastr.success('Purchase order created. Inventory replenished.', 'Success');
+          this.resetForm();
+        },
+        error: err => this.toastr.error(err?.error?.message || 'Failed to submit order.', 'Error')
+      });
   }
 
   resetForm(): void {
-    this.purchaseForm.reset({
-      orderDate: new Date().toISOString().slice(0, 10),
-      status: 'Pending',
-      paymentMode: 'Cash'
-    });
+    this.purchaseForm.reset({ orderDate: new Date().toISOString().slice(0, 10), status: 'Pending', paymentMode: 'Cash' });
     this.purchaseItems = [{ itemId: '', itemName: '', quantity: 1, unitPrice: 0, total: 0 }];
+    this.selectedVendorId = null;
     this.updateRowData();
+    this.api.getPurchaseOrders(1, 50).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: r => { this.existingOrders = r.items; this.cdr.markForCheck(); }
+    });
   }
 
   exportToCsv(): void {
@@ -266,7 +240,5 @@ export class PurchaseOrderComponent implements OnInit, CanComponentDeactivate {
     this.exportService.exportToCsv(headers, rows, `purchase_order_${new Date().toISOString().split('T')[0]}`);
   }
 
-  goBack(): void {
-    this.router.navigate(['/dashboard']);
-  }
+  goBack(): void { this.router.navigate(['/dashboard']); }
 }

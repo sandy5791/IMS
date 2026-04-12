@@ -81,7 +81,7 @@
                     <div class="avatar"><i class="fas fa-arrow-up-right-dots text-success"></i></div>
                     <div class="details">
                         <div class="name">Sale: {{ sale.customerName }}</div>
-                        <div class="info">ID: {{ sale.orderId }} • {{ sale.date }}</div>
+                        <div class="info">ID: {{ sale.orderId }} • {{ sale.orderDate }}</div>
                     </div>
                     <div class="amount positive text-success">+ {{ sale.totalAmount | currency }}</div>
                 </a>
@@ -90,7 +90,7 @@
                     <div class="avatar"><i class="fas fa-truck-loading text-danger"></i></div>
                     <div class="details">
                         <div class="name">Purchase: {{ pur.vendorName }}</div>
-                        <div class="info">ID: {{ pur.orderId }} • {{ pur.date }}</div>
+                        <div class="info">ID: {{ pur.orderId }} • {{ pur.orderDate }}</div>
                     </div>
                     <div class="amount negative text-danger">- {{ pur.totalAmount | currency }}</div>
                 </a>
