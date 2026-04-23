@@ -1,32 +1,52 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { Observable } from 'rxjs';
+import { toObservable } from '@angular/core/rxjs-interop';
 import { StorageService } from './storage.service';
 
+/** Shape of a translation file — nested key-value pairs. */
+type TranslationMap = Record<string, string | TranslationMap>;
+
+/**
+ * TranslationService — dynamic multi-language translation pipeline.
+ * Loads JSON translation files from assets/i18n/ and provides
+ * dot-notation key lookups for template consumption.
+ */
 @Injectable({
   providedIn: 'root'
 })
 export class TranslationService {
-  private currentLang: BehaviorSubject<string>;
-  public currentLang$: Observable<string>;
+  private readonly http = inject(HttpClient);
+  private readonly storage = inject(StorageService);
 
-  private translations: Record<string, any> = {};
-  private translationsLoaded = new BehaviorSubject<boolean>(false);
+  private readonly langSignal = signal<string>('en');
 
-  constructor(private http: HttpClient, private storage: StorageService) {
+  /** Observable stream of the current language for reactive consumers. */
+  public currentLang$: Observable<string> = toObservable(this.langSignal);
+
+  private readonly translationsSignal = signal<TranslationMap>({});
+
+  /** Signal indicating whether translations have been loaded and are ready. */
+  public readonly loadedSignal = signal<boolean>(false);
+
+  constructor() {
     const savedLang = this.storage.getItem<string>('ims-lang') || 'en';
-    this.currentLang = new BehaviorSubject<string>(savedLang);
-    this.currentLang$ = this.currentLang.asObservable();
+    this.langSignal.set(savedLang);
     this.use(savedLang);
   }
 
+  /**
+   * Loads a translation file for the given language and updates internal state.
+   * Persists the selected language to StorageService.
+   * @param lang - ISO language code (e.g. 'en', 'es', 'hi').
+   */
   use(lang: string): void {
-    this.http.get<Record<string, any>>(`./assets/i18n/${lang}.json`).subscribe({
-      next: (res) => {
-        this.translations = res;
-        this.currentLang.next(lang);
+    this.http.get<TranslationMap>(`./assets/i18n/${lang}.json`).subscribe({
+      next: (res: TranslationMap) => {
+        this.translationsSignal.set(res);
+        this.langSignal.set(lang);
         this.storage.setItem('ims-lang', lang);
-        this.translationsLoaded.next(true);
+        this.loadedSignal.set(true);
       },
       error: () => {
         console.error(`Failed to load translation file for language: ${lang}`);
@@ -34,17 +54,29 @@ export class TranslationService {
     });
   }
 
+  /** Returns the current active language code. */
   get currentLanguage(): string {
-    return this.currentLang.value;
+    return this.langSignal();
   }
 
-  getTranslation(key: string): any {
-    return key.split('.').reduce((obj, property) => {
-      return obj ? obj[property] : null;
-    }, this.translations) || key;
+  /**
+   * Retrieves a translated string by dot-notation key path.
+   * Falls back to the key itself if the translation is not found.
+   * @param key - Dot-separated key path (e.g. 'dashboard.title').
+   * @returns The translated string, or the key as fallback.
+   */
+  getTranslation(key: string): string {
+    const result = key.split('.').reduce<TranslationMap | string | undefined>((obj, property) => {
+      if (obj && typeof obj === 'object') {
+        return (obj as TranslationMap)[property];
+      }
+      return undefined;
+    }, this.translationsSignal());
+    return (typeof result === 'string' ? result : key);
   }
 
-  onTranslationsLoaded(): Observable<boolean> {
-    return this.translationsLoaded.asObservable();
+  /** Returns the loadedSignal for consumers to check if translations are ready. */
+  onTranslationsLoaded() {
+    return this.loadedSignal;
   }
 }

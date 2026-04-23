@@ -3,7 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { ToastrService } from 'ngx-toastr';
+import { NotificationService } from '../../services/notification.service';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatPaginatorModule, MatPaginator } from '@angular/material/paginator';
@@ -72,7 +72,7 @@ export class SalesOrderComponent implements OnInit, CanComponentDeactivate, Afte
   constructor(
     private fb: FormBuilder,
     private router: Router,
-    private toastr: ToastrService,
+    private toastr: NotificationService,
     private api: ImsApiService,
     private storage: StorageService,
     private exportService: ExportService,

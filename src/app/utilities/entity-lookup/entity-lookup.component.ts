@@ -1,10 +1,9 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { fadeInUpOnEnter } from '@ngverse/motion/animatecss';
 
-import { CoreDataService } from '../../services/core-data.service';
-import { Customer, Vendor } from '../../project/models/model';
+import { ApiCustomer, ApiVendor, ImsApiService } from '../../services/ims-api.service';
 
 @Component({
   selector: 'app-entity-lookup',
@@ -22,12 +21,12 @@ export class EntityLookupComponent {
   isVisible = false;
   lookupMode: 'search' | 'create' = 'search';
   searchText = '';
-  sortOrder: 'name-asc' | 'name-desc' | 'latest' = 'latest';
+  sortOrder: 'latest' | 'name-asc' | 'name-desc' = 'latest';
 
-  filteredItems: any[] = [];
+  filteredItems: Array<ApiCustomer | ApiVendor> = [];
   entityForm: FormGroup;
 
-  constructor(private fb: FormBuilder, private coreData: CoreDataService) {
+  constructor(private fb: FormBuilder, private imsApi: ImsApiService, private cdr: ChangeDetectorRef) {
     this.entityForm = this.fb.group({
       name: ['', Validators.required],
       phone: [''],
@@ -64,35 +63,51 @@ export class EntityLookupComponent {
   }
 
   filterData(): void {
-    const s = this.searchText.toLowerCase();
-    const sourceArr = this.type === 'customer' ? this.coreData.getCustomers() : this.coreData.getVendors();
-
-    this.filteredItems = sourceArr.filter(item => {
-      const matchName = item.name?.toLowerCase().includes(s);
-      const matchPhone = item.phone?.toLowerCase().includes(s);
-      const idField = this.getIdField(item);
-      const matchId = idField ? idField.toLowerCase().includes(s) : false;
-      return matchName || matchPhone || matchId;
-    });
-
-    this.filteredItems.sort((a, b) => {
-      if (this.sortOrder === 'name-asc') return a.name.localeCompare(b.name);
-      if (this.sortOrder === 'name-desc') return b.name.localeCompare(a.name);
-      return 0;
-    });
+    // Basic search on API
+    if (this.type === 'customer') {
+      this.imsApi.getCustomers(1, 20, this.searchText).subscribe({
+        next: (res) => {
+          this.filteredItems = this.sortItems(res.items);
+          this.cdr.markForCheck();
+        }
+      });
+    } else {
+      this.imsApi.getVendors(1, 20, this.searchText).subscribe({
+        next: (res) => {
+          this.filteredItems = this.sortItems(res.items);
+          this.cdr.markForCheck();
+        }
+      });
+    }
   }
 
-  onSortChange(): void {
+  onSearchChange(): void {
     this.filterData();
   }
 
-  selectItem(item: any): void {
+  onSortChange(): void {
+    this.filteredItems = this.sortItems(this.filteredItems);
+    this.cdr.markForCheck();
+  }
+
+  selectItem(item: ApiCustomer | ApiVendor): void {
     this.entitySelected.emit(item);
     this.close();
   }
 
-  getIdField(item: any): string {
-    return this.type === 'customer' ? item.customerId : item.vendorId;
+  getIdField(item: ApiCustomer | ApiVendor): string {
+    return 'customerId' in item ? item.customerId : item.vendorId;
+  }
+
+  private sortItems(items: Array<ApiCustomer | ApiVendor>): Array<ApiCustomer | ApiVendor> {
+    if (this.sortOrder === 'latest') {
+      return [...items];
+    }
+
+    const direction = this.sortOrder === 'name-desc' ? -1 : 1;
+    return [...items].sort((left, right) =>
+      left.name.localeCompare(right.name) * direction
+    );
   }
 
   createEntity(): void {
@@ -103,27 +118,25 @@ export class EntityLookupComponent {
     const vals = this.entityForm.value;
 
     if (this.type === 'customer') {
-      const newCust = new Customer({
-        customerId: 'CUST-' + Math.floor(Math.random() * 90000 + 10000),
+      this.imsApi.createCustomer({
         name: vals.name,
-        phone: vals.phone || 'N/A',
         email: vals.email || 'N/A',
-        address: '',
+        phone: vals.phone || 'N/A',
+        address: 'N/A',
         loyaltyPoints: 0
+      }).subscribe(newCust => {
+        this.selectItem(newCust);
       });
-      this.coreData.addCustomer(newCust);
-      this.selectItem(newCust);
     } else {
-      const newVend = new Vendor({
-        vendorId: 'VND-' + Math.floor(Math.random() * 90000 + 10000),
+      this.imsApi.createVendor({
         name: vals.name,
-        phone: vals.phone || 'N/A',
         email: vals.email || 'N/A',
-        address: '',
+        phone: vals.phone || 'N/A',
+        address: 'N/A',
         rating: 5
+      }).subscribe(newVend => {
+        this.selectItem(newVend);
       });
-      this.coreData.addVendor(newVend);
-      this.selectItem(newVend);
     }
   }
 }

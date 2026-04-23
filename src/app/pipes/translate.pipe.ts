@@ -1,37 +1,15 @@
-import { Pipe, PipeTransform, ChangeDetectorRef, OnDestroy } from '@angular/core';
+import { Pipe, PipeTransform } from '@angular/core';
 import { TranslationService } from '../services/translation.service';
-import { Subscription } from 'rxjs';
 
 @Pipe({
   name: 'translate',
   standalone: true,
-  pure: false // Impure to automatically trigger CD on language change
+  pure: false // Impure evaluates frequently, but reading a signal automatically associates it with view's reactive context!
 })
-export class TranslatePipe implements PipeTransform, OnDestroy {
-  private value = '';
-  private lastKey = '';
-  private subscription!: Subscription;
-
-  constructor(private translationService: TranslationService, private ref: ChangeDetectorRef) {
-    this.subscription = this.translationService.currentLang$.subscribe(() => {
-      if (this.lastKey) {
-        this.value = this.translationService.getTranslation(this.lastKey);
-        this.ref.markForCheck();
-      }
-    });
-  }
+export class TranslatePipe implements PipeTransform {
+  constructor(private translationService: TranslationService) {}
 
   transform(key: string): string {
-    if (key !== this.lastKey) {
-      this.lastKey = key;
-      this.value = this.translationService.getTranslation(key);
-    }
-    return this.value;
-  }
-
-  ngOnDestroy(): void {
-    if (this.subscription) {
-      this.subscription.unsubscribe();
-    }
+    return this.translationService.getTranslation(key);
   }
 }

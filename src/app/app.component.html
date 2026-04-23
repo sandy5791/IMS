@@ -5,4 +5,13 @@
   <div class="bg-shape shape-3"></div>
 </div>
 
-<router-outlet></router-outlet>
+<router-outlet />
+
+<!-- Global HTTP Loading Spinner -->
+@if (loading.isLoading()) {
+  <div class="global-spinner-overlay" aria-label="Loading">
+    <div class="spinner-ring">
+      <div></div><div></div><div></div><div></div>
+    </div>
+  </div>
+}

@@ -1,7 +1,7 @@
-import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, AbstractControl } from '@angular/forms';
-import { ToastrService } from 'ngx-toastr';
+import { NotificationService } from '../../services/notification.service';
 import { Router, RouterModule } from '@angular/router';
 import { catchError, of } from 'rxjs';
 import { zoomInOnEnter, fadeInDownOnEnter, fadeInUpOnEnter } from '@ngverse/motion/animatecss';
@@ -26,15 +26,16 @@ import { TranslatePipe } from '../../pipes/translate.pipe';
 })
 export class LoginComponent implements OnInit {
   loginForm: FormGroup;
-  isSubmitted = false;
-  showPassword = false;
-  isLoading = false;
-  loginSuccess = false;
-  isLightTheme = false;
+  
+  isSubmitted = signal(false);
+  showPassword = signal(false);
+  isLoading = signal(false);
+  loginSuccess = signal(false);
+  isLightTheme = signal(false);
 
   constructor(
     private fb: FormBuilder,
-    private toast: ToastrService,
+    private toast: NotificationService,
     private router: Router,
     private authService: AuthService,
     private storage: StorageService,
@@ -47,7 +48,7 @@ export class LoginComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.isLightTheme = this.themeService.isLightTheme;
+    this.isLightTheme.set(this.themeService.isLightTheme);
   }
 
   get username(): AbstractControl | null {
@@ -59,41 +60,41 @@ export class LoginComponent implements OnInit {
   }
 
   onSubmit(): void {
-    this.isSubmitted = true;
+    this.isSubmitted.set(true);
     if (this.loginForm.invalid) {
       this.toast.error('Please enter valid credentials.', 'Error');
       return;
     }
 
-    this.isLoading = true;
+    this.isLoading.set(true);
     this.authService.login(this.loginForm.value).pipe(
       catchError((err) => {
         const msg = err?.error?.message || 'Login failed. Check your credentials.';
         this.toast.error(msg, 'Error');
-        this.isLoading = false;
+        this.isLoading.set(false);
         return of(null);
       })
     ).subscribe((res) => {
       if (!res) return;
       this.toast.success('Login successful', 'Success');
-      this.loginSuccess = true;
+      this.loginSuccess.set(true);
       setTimeout(() => this.router.navigate(['/dashboard']), 900);
     });
   }
 
   togglePassword(): void {
-    this.showPassword = !this.showPassword;
+    this.showPassword.update(s => !s);
   }
 
   toggleTheme(): void {
     this.themeService.toggleTheme();
-    this.isLightTheme = this.themeService.isLightTheme;
+    this.isLightTheme.set(this.themeService.isLightTheme);
   }
 
   resetForm(): void {
-    this.isSubmitted = false;
-    this.isLoading = false;
-    this.showPassword = false;
+    this.isSubmitted.set(false);
+    this.isLoading.set(false);
+    this.showPassword.set(false);
     this.loginForm.reset();
   }
 }

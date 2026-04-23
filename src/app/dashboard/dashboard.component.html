@@ -134,6 +134,13 @@
     </aside>
 
     <main class="dashboard-content">
-        <router-outlet></router-outlet>
+        @defer {
+            <router-outlet></router-outlet>
+        } @loading {
+            <div class="d-flex justify-content-center align-items-center h-100 text-white">
+                <i class="fas fa-spinner fa-spin fa-2x"></i>
+                <span class="ms-2">Loading view...</span>
+            </div>
+        }
     </main>
 </div>

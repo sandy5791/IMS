@@ -7,7 +7,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatPaginatorModule, MatPaginator } from '@angular/material/paginator';
 import { MatSortModule, MatSort } from '@angular/material/sort';
 import { SelectionModel } from '@angular/cdk/collections';
-import { ToastrService } from 'ngx-toastr';
+import { NotificationService } from '../../services/notification.service';
 import { fadeInUpOnEnter, slideInLeftOnEnter } from '@ngverse/motion/animatecss';
 import { finalize } from 'rxjs';
 
@@ -49,7 +49,7 @@ export class VendorsComponent implements OnInit, AfterViewInit {
     private fb: FormBuilder,
     private api: ImsApiService,
     private exportService: ExportService,
-    private toastr: ToastrService,
+    private toastr: NotificationService,
     private cdr: ChangeDetectorRef
   ) {
     this.vendorForm = this.fb.group({
@@ -137,7 +137,7 @@ export class VendorsComponent implements OnInit, AfterViewInit {
   exportToCsv(): void {
     const headers = ['Vendor ID', 'Name', 'Email', 'Phone', 'Address', 'Rating'];
     const rows = this.vendorsList.map(v => [
-      v.vendorId, v.name, v.email, v.phone, v.address, v.rating.toString()
+      v.vendorId, v.name, v.email ?? '', v.phone ?? '', v.address ?? '', v.rating.toString()
     ]);
     this.exportService.exportToCsv(headers, rows, 'vendors');
   }

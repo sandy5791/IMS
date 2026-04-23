@@ -1,23 +1,28 @@
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
-import { Injectable } from '@angular/core';
-import { Router } from '@angular/router';
+import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, throwError } from 'rxjs';
+import { environment } from '../../environments/environment';
 import { StorageService } from './storage.service';
 
+/**
+ * HttpserviceService — low-level HTTP adapter wrapping Angular HttpClient.
+ * Handles base URL construction and Authorization header injection.
+ * All domain-level HTTP calls should go through ImsApiService, not this service directly.
+ */
 @Injectable({
   providedIn: 'root'
 })
 export class HttpserviceService {
+  private readonly http = inject(HttpClient);
+  private readonly storage = inject(StorageService);
 
-  constructor(
-    private http: HttpClient,
-    private router: Router,
-    private storage: StorageService
-  ) {}
+  /** API base URL sourced from environment configuration. */
+  private readonly apiUrl = environment.apiUrl;
 
-  // ─── API Base URL (update for production) ──────────────────
-  private readonly apiUrl = 'https://localhost:7210/api';
-
+  /**
+   * Constructs a full API URL from a relative path.
+   * Handles absolute URLs, missing paths, and trailing/leading slash normalization.
+   */
   private buildUrl(url: string): string {
     if (!url) {
       return this.apiUrl;
@@ -30,54 +35,53 @@ export class HttpserviceService {
     return `${normalizedBase}${normalizedPath}`;
   }
 
-  /** Build Authorization header using stored JWT token. */
+  /** Builds Authorization header using the stored JWT token via StorageService. */
   private getAuthHeaders(): Record<string, string> {
     const token = this.storage.getItem<string>('authToken');
     return token ? { Authorization: `Bearer ${token}` } : {};
   }
 
-  public get<T = any>(url: string, queryParams?: HttpParams): Observable<T> {
+  /** Performs an HTTP GET request with optional query parameters. */
+  public get<T>(url: string, queryParams?: HttpParams): Observable<T> {
     return this.http.get<T>(this.buildUrl(url), {
       params: queryParams,
       headers: this.getAuthHeaders()
-    }).pipe(catchError((err) => this.errorHandler(err)));
+    }).pipe(catchError((err: HttpErrorResponse) => this.errorHandler(err)));
   }
 
-  public post<T = any>(url: string, data: any, queryParams?: HttpParams): Observable<T> {
+  /** Performs an HTTP POST request with a typed request body. */
+  public post<T>(url: string, data: unknown, queryParams?: HttpParams): Observable<T> {
     return this.http.post<T>(this.buildUrl(url), data, {
       params: queryParams,
       headers: this.getAuthHeaders()
-    }).pipe(catchError((err) => this.errorHandler(err)));
+    }).pipe(catchError((err: HttpErrorResponse) => this.errorHandler(err)));
   }
 
-  public patch<T = any>(url: string, data: any, queryParams?: HttpParams): Observable<T> {
+  /** Performs an HTTP PATCH request with a typed request body. */
+  public patch<T>(url: string, data: unknown, queryParams?: HttpParams): Observable<T> {
     return this.http.patch<T>(this.buildUrl(url), data, {
       params: queryParams,
       headers: this.getAuthHeaders()
-    }).pipe(catchError((err) => this.errorHandler(err)));
+    }).pipe(catchError((err: HttpErrorResponse) => this.errorHandler(err)));
   }
 
-  public put<T = any>(url: string, data: any): Observable<T> {
+  /** Performs an HTTP PUT request with a typed request body. */
+  public put<T>(url: string, data: unknown): Observable<T> {
     return this.http.put<T>(this.buildUrl(url), data, {
       headers: this.getAuthHeaders()
-    }).pipe(catchError((err) => this.errorHandler(err)));
+    }).pipe(catchError((err: HttpErrorResponse) => this.errorHandler(err)));
   }
 
-  public delete<T = any>(url: string, queryParams?: HttpParams): Observable<T> {
+  /** Performs an HTTP DELETE request with optional query parameters. */
+  public delete<T>(url: string, queryParams?: HttpParams): Observable<T> {
     return this.http.delete<T>(this.buildUrl(url), {
       params: queryParams,
       headers: this.getAuthHeaders()
-    }).pipe(catchError((err) => this.errorHandler(err)));
+    }).pipe(catchError((err: HttpErrorResponse) => this.errorHandler(err)));
   }
 
+  /** Re-throws the HTTP error for upstream interceptors and subscribers to handle. */
   private errorHandler(err: HttpErrorResponse): Observable<never> {
-    if (err instanceof HttpErrorResponse) {
-      if (err.status === 401) {
-        this.storage.removeItem('authToken');
-        this.storage.removeItem('LoggedInUser');
-        this.router.navigate(['/login']);
-      }
-    }
     return throwError(() => err);
   }
 }

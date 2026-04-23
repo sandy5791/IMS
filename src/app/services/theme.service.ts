@@ -1,5 +1,4 @@
-import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { Injectable, signal } from '@angular/core';
 import { StorageService } from './storage.service';
 
 @Injectable({
@@ -7,27 +6,24 @@ import { StorageService } from './storage.service';
 })
 export class ThemeService {
   private readonly storageKey = 'ims-theme';
-  private isLightThemeSubject!: BehaviorSubject<boolean>;
-
-  /** Observable stream of the current theme state (true = light, false = dark). */
-  isLightTheme$!: Observable<boolean>;
+  
+  /** Signal containing the current theme state (true = light, false = dark). */
+  readonly isLightThemeSignal = signal<boolean>(false);
 
   constructor(private storage: StorageService) {
     const savedTheme = this.storage.getItem<string>(this.storageKey);
-    this.isLightThemeSubject = new BehaviorSubject<boolean>(savedTheme === 'light');
-    this.isLightTheme$ = this.isLightThemeSubject.asObservable();
-    this.applyTheme(this.isLightThemeSubject.value);
+    this.isLightThemeSignal.set(savedTheme === 'light');
+    this.applyTheme(this.isLightThemeSignal());
   }
 
   get isLightTheme(): boolean {
-    return this.isLightThemeSubject.value;
+    return this.isLightThemeSignal();
   }
 
   toggleTheme(): void {
-    const newValue = !this.isLightThemeSubject.value;
-    this.isLightThemeSubject.next(newValue);
-    this.storage.setItem(this.storageKey, newValue ? 'light' : 'dark');
-    this.applyTheme(newValue);
+    this.isLightThemeSignal.update(v => !v);
+    this.storage.setItem(this.storageKey, this.isLightThemeSignal() ? 'light' : 'dark');
+    this.applyTheme(this.isLightThemeSignal());
   }
 
   private applyTheme(isLight: boolean): void {

@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { HttpParams } from '@angular/common/http';
@@ -21,25 +21,33 @@ export interface PagedResult<T> {
   totalPages: number;
 }
 
+/** User information returned by the /auth/me endpoint. */
+export interface UserInfo {
+  username: string;
+  role: string;
+}
+
 // ── Domain Types ──────────────────────────────────────────────
 export interface ApiCustomer {
   customerId: string;
   name: string;
-  email: string;
-  phone: string;
-  address: string;
+  email?: string;
+  phone?: string;
+  address?: string;
   loyaltyPoints: number;
   createdAt?: string;
+  isDeleted?: boolean;
 }
 
 export interface ApiVendor {
   vendorId: string;
   name: string;
-  email: string;
-  phone: string;
-  address: string;
+  email?: string;
+  phone?: string;
+  address?: string;
   rating: number;
   createdAt?: string;
+  isDeleted?: boolean;
 }
 
 export interface ApiInventoryItem {
@@ -48,11 +56,13 @@ export interface ApiInventoryItem {
   category: string;
   stockQty: number;
   reorderLevel: number;
-  location: string;
-  batchNumber: string;
+  isLowStock?: boolean;
+  location?: string;
+  batchNumber?: string;
   expiryDate?: string;
   unitPrice: number;
   updatedAt?: string;
+  isDeleted?: boolean;
 }
 
 export interface ApiSaleItem {
@@ -125,6 +135,77 @@ export interface DashboardKpi {
   monthlyRevenue: number;
 }
 
+// ── Report Types ──────────────────────────────────────────────
+export interface ApiSalesDailySummary {
+  orderDate: string;
+  orderCount: number;
+  revenue: number;
+  avgOrderValue: number;
+}
+
+export interface ApiTopCustomer {
+  customerName: string;
+  totalSpent: number;
+  orders: number;
+}
+
+export interface ApiTopItem {
+  itemName: string;
+  totalQty: number;
+  revenue: number;
+}
+
+export interface ApiSalesSummary {
+  dailySummary: ApiSalesDailySummary[];
+  topCustomers: ApiTopCustomer[];
+  topItems: ApiTopItem[];
+}
+
+export interface ApiPurchaseDailySummary {
+  orderDate: string;
+  orderCount: number;
+  totalCost: number;
+}
+
+export interface ApiTopVendor {
+  vendorName: string;
+  totalPurchased: number;
+  orders: number;
+}
+
+export interface ApiPurchaseSummary {
+  dailySummary: ApiPurchaseDailySummary[];
+  topVendors: ApiTopVendor[];
+}
+
+export interface ApiInventoryOverallStats {
+  totalItems: number;
+  totalStockUnits: number;
+  lowStockItems: number;
+  outOfStockItems: number;
+}
+
+export interface ApiInventoryCategory {
+  category: string;
+  itemCount: number;
+  totalStock: number;
+}
+
+export interface ApiInventoryStatus {
+  overallStats: ApiInventoryOverallStats;
+  categories: ApiInventoryCategory[];
+  lowStock: ApiInventoryItem[];
+}
+
+export interface ApiStockMovement {
+  itemId: string;
+  itemName: string;
+  qty: number;
+  type: string;
+  date: string;
+  reference: string;
+}
+
 /**
  * ImsApiService — centralized gateway to all IMS backend endpoints.
  * Replaces CoreDataService's in-memory mock with real HTTP calls.
@@ -132,19 +213,21 @@ export interface DashboardKpi {
 @Injectable({ providedIn: 'root' })
 export class ImsApiService {
 
-  constructor(private http: HttpserviceService) {}
+  private readonly http = inject(HttpserviceService);
 
   private extractData<T>(obs: Observable<ApiResponse<T>>): Observable<T> {
     return obs.pipe(map(r => r.data));
   }
 
   // ── Auth ────────────────────────────────────────────────────
-  login(username: string, password: string): Observable<any> {
-    return this.http.post('/auth/login', { username, password });
+  /** Authenticates a user and returns a JWT token response. */
+  login(username: string, password: string): Observable<ApiResponse<{ token: string; username: string; role: string; expiresAt: string }>> {
+    return this.http.post<ApiResponse<{ token: string; username: string; role: string; expiresAt: string }>>('/auth/login', { username, password });
   }
 
-  getMe(): Observable<any> {
-    return this.http.get('/auth/me');
+  /** Returns the currently authenticated user's claims. */
+  getMe(): Observable<ApiResponse<UserInfo>> {
+    return this.http.get<ApiResponse<UserInfo>>('/auth/me');
   }
 
   // ── Customers ───────────────────────────────────────────────
@@ -166,8 +249,8 @@ export class ImsApiService {
     return this.extractData(this.http.put<ApiResponse<ApiCustomer>>(`/customers/${id}`, customer));
   }
 
-  deleteCustomer(id: string): Observable<any> {
-    return this.http.delete(`/customers/${id}`);
+  deleteCustomer(id: string): Observable<ApiResponse<object>> {
+    return this.http.delete<ApiResponse<object>>(`/customers/${id}`);
   }
 
   // ── Vendors ─────────────────────────────────────────────────
@@ -189,8 +272,8 @@ export class ImsApiService {
     return this.extractData(this.http.put<ApiResponse<ApiVendor>>(`/vendors/${id}`, vendor));
   }
 
-  deleteVendor(id: string): Observable<any> {
-    return this.http.delete(`/vendors/${id}`);
+  deleteVendor(id: string): Observable<ApiResponse<object>> {
+    return this.http.delete<ApiResponse<object>>(`/vendors/${id}`);
   }
 
   // ── Inventory ────────────────────────────────────────────────
@@ -215,12 +298,12 @@ export class ImsApiService {
     return this.extractData(this.http.put<ApiResponse<ApiInventoryItem>>(`/inventory/${id}`, item));
   }
 
-  deleteInventoryItem(id: string): Observable<any> {
-    return this.http.delete(`/inventory/${id}`);
+  deleteInventoryItem(id: string): Observable<ApiResponse<object>> {
+    return this.http.delete<ApiResponse<object>>(`/inventory/${id}`);
   }
 
-  adjustStock(id: string, quantity: number, reason: string): Observable<any> {
-    return this.http.patch(`/inventory/${id}/adjust`, { quantity, reason });
+  adjustStock(id: string, quantity: number, reason: string): Observable<ApiResponse<object>> {
+    return this.http.patch<ApiResponse<object>>(`/inventory/${id}/adjust`, { quantity, reason });
   }
 
   // ── Sales Orders ─────────────────────────────────────────────
@@ -238,8 +321,8 @@ export class ImsApiService {
     return this.extractData(this.http.post<ApiResponse<ApiSalesOrder>>('/sales', order));
   }
 
-  deleteSalesOrder(id: string): Observable<any> {
-    return this.http.delete(`/sales/${id}`);
+  deleteSalesOrder(id: string): Observable<ApiResponse<object>> {
+    return this.http.delete<ApiResponse<object>>(`/sales/${id}`);
   }
 
   // ── Purchase Orders ──────────────────────────────────────────
@@ -257,8 +340,8 @@ export class ImsApiService {
     return this.extractData(this.http.post<ApiResponse<ApiPurchaseOrder>>('/purchases', order));
   }
 
-  deletePurchaseOrder(id: string): Observable<any> {
-    return this.http.delete(`/purchases/${id}`);
+  deletePurchaseOrder(id: string): Observable<ApiResponse<object>> {
+    return this.http.delete<ApiResponse<object>>(`/purchases/${id}`);
   }
 
   // ── Reports ──────────────────────────────────────────────────
@@ -266,28 +349,28 @@ export class ImsApiService {
     return this.extractData(this.http.get<ApiResponse<DashboardKpi>>('/reports/dashboard'));
   }
 
-  getSalesSummary(fromDate?: string, toDate?: string): Observable<any> {
+  getSalesSummary(fromDate?: string, toDate?: string): Observable<ApiSalesSummary> {
     let params = new HttpParams();
     if (fromDate) params = params.set('fromDate', fromDate);
     if (toDate) params = params.set('toDate', toDate);
-    return this.extractData(this.http.get<ApiResponse<any>>('/reports/sales-summary', params));
+    return this.extractData(this.http.get<ApiResponse<ApiSalesSummary>>('/reports/sales-summary', params));
   }
 
-  getPurchaseSummary(fromDate?: string, toDate?: string): Observable<any> {
+  getPurchaseSummary(fromDate?: string, toDate?: string): Observable<ApiPurchaseSummary> {
     let params = new HttpParams();
     if (fromDate) params = params.set('fromDate', fromDate);
     if (toDate) params = params.set('toDate', toDate);
-    return this.extractData(this.http.get<ApiResponse<any>>('/reports/purchase-summary', params));
+    return this.extractData(this.http.get<ApiResponse<ApiPurchaseSummary>>('/reports/purchase-summary', params));
   }
 
-  getInventoryStatus(): Observable<any> {
-    return this.extractData(this.http.get<ApiResponse<any>>('/reports/inventory-status'));
+  getInventoryStatus(): Observable<ApiInventoryStatus> {
+    return this.extractData(this.http.get<ApiResponse<ApiInventoryStatus>>('/reports/inventory-status'));
   }
 
-  getStockMovement(itemId?: string): Observable<any> {
+  getStockMovement(itemId?: string): Observable<ApiStockMovement[]> {
     let params = new HttpParams();
     if (itemId) params = params.set('itemId', itemId);
-    return this.extractData(this.http.get<ApiResponse<any>>('/reports/stock-movement', params));
+    return this.extractData(this.http.get<ApiResponse<ApiStockMovement[]>>('/reports/stock-movement', params));
   }
 
   // ── Audit Logs ───────────────────────────────────────────────
@@ -298,7 +381,8 @@ export class ImsApiService {
     return this.extractData(this.http.get<ApiResponse<PagedResult<ApiAuditLog>>>('/logs', params));
   }
 
-  createAuditLog(action: string, module: string, details: string, severity = 'info'): Observable<any> {
-    return this.http.post('/logs', { action, module, details, severity });
+  createAuditLog(action: string, module: string, details: string, severity = 'info'): Observable<ApiResponse<ApiAuditLog>> {
+    return this.http.post<ApiResponse<ApiAuditLog>>('/logs', { action, module, details, severity });
   }
 }
+

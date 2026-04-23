@@ -1,0 +1,98 @@
+.glass-snackbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.2rem;
+  border-radius: 12px;
+  background: rgba(12, 10, 38, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  min-width: 320px;
+  max-width: 450px;
+  position: relative;
+  overflow: hidden;
+
+  // Type-specific glowing borders & icons
+  &.success {
+    border-left: 4px solid #10b981;
+    .snackbar-icon i { color: #10b981; filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.6)); }
+  }
+  &.error {
+    border-left: 4px solid #ef4444;
+    .snackbar-icon i { color: #ef4444; filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.6)); }
+  }
+  &.warning {
+    border-left: 4px solid #f59e0b;
+    .snackbar-icon i { color: #f59e0b; filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.6)); }
+  }
+  &.info {
+    border-left: 4px solid #38bdf8;
+    .snackbar-icon i { color: #38bdf8; filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.6)); }
+  }
+
+  .snackbar-icon {
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .snackbar-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+
+    .snackbar-title {
+      margin: 0 0 0.25rem 0;
+      font-size: 0.95rem;
+      font-weight: 700;
+      font-family: 'Syne', sans-serif;
+      letter-spacing: 0.5px;
+    }
+
+    .snackbar-message {
+      font-size: 0.85rem;
+      opacity: 0.9;
+      line-height: 1.4;
+    }
+  }
+
+  .snackbar-close {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    padding: 0.5rem;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    align-self: flex-start;
+    margin-top: -0.2rem;
+
+    &:hover {
+      color: #ffffff;
+      transform: scale(1.1);
+    }
+  }
+}
+
+// Global material override for this specific panel class using ViewEncapsulation.None
+body .mat-mdc-snack-bar-container.glass-snackbar-panel {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 1.5rem auto !important;
+
+  .mdc-snackbar__surface {
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+  
+  .mdc-snackbar__label {
+    padding: 0 !important;
+  }
+}
